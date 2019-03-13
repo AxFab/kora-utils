@@ -83,4 +83,22 @@ static inline void arg_version(char *program)
     printf("%s (Kora system) %s\n%s\n", program, VERSION, COPYRIGHT);
 }
 
+static inline int arg_parse(int argc, char **argv, void(*func)(void *,char), void *params, opts_t *opts)
+{
+    int o, n = 0;
+    for (o = 1; o < argc; ++i) {
+        if (argv[o][0] != '-') {
+            n++;
+            continue;
+        }
+
+        char *opt = &argv[i][1];
+        if (*opt == '-')
+            opt = arg_long(&argv[i][2]);
+        for (; *opt; ++opt)
+            func(params, *opt);
+    }
+    return n;
+}
+
 #endif /* __UTILS_H */

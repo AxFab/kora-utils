@@ -20,8 +20,7 @@ VERSION=0.0-$(GIT)
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-char-subscripts
 CFLAGS += -Wno-multichar -Wno-implicit-fallthrough
 CFLAGS += -fno-builtin -fPIC
-CFLAGS += -D_DATE_=\"'$(DATE)'\" -D_OSNAME_=\"'$(LINUX)'\"
-CFLAGS += -D_GITH_=\"'$(GIT)'\" -D_VTAG_=\"'$(VERSION)'\"
+CFLAGS += -D_DATE_=\"'$(DATE)'\" -D_VTAG_=\"'$(VERSION)'\"
 CFLAGS += -ggdb
 
 
