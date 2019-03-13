@@ -18,7 +18,7 @@ NAME=kora-utils
 VERSION=0.0-$(GIT)
 
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-char-subscripts
-CFLAGS += -Wno-multichar -Wno-implicit-fallthrough
+CFLAGS += -Wno-multichar
 CFLAGS += -fno-builtin -fPIC
 CFLAGS += -D_DATE_=\"'$(DATE)'\" -D_VTAG_=\"'$(VERSION)'\"
 CFLAGS += -ggdb
@@ -31,6 +31,10 @@ COV_FLAGS += --coverage -fprofile-arcs -ftest-coverage
 # We define compilation modes and associated flags
 std_CFLAGS += $(CFLAGS)
 std_CFLAGS += -I$(topdir)/include
+
+std_CFLAGS += -I$(topdir)/../kernel/include
+std_CFLAGS += -I$(topdir)/../kernel/arch/$(target_arch)/include
+std_CFLAGS += -I$(topdir)/../kernel/os/$(target_os)
 
 $(eval $(call ccpl,std))
 
@@ -47,5 +51,6 @@ endef
 
 $(eval $(call util,basename))
 $(eval $(call util,cat))
+$(eval $(call util,ls))
 
 

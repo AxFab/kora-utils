@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef void(*parsa_t)(void *,char);
+
 typedef struct opt {
     char sh;
     char resv;
@@ -83,18 +85,18 @@ static inline void arg_version(char *program)
     printf("%s (Kora system) %s\n%s\n", program, VERSION, COPYRIGHT);
 }
 
-static inline int arg_parse(int argc, char **argv, void(*func)(void *,char), void *params, opts_t *opts)
+static inline int arg_parse(int argc, char **argv, parsa_t func, void *params, opt_t *opts)
 {
     int o, n = 0;
-    for (o = 1; o < argc; ++i) {
+    for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
             n++;
             continue;
         }
 
-        char *opt = &argv[i][1];
+        char *opt = &argv[o][1];
         if (*opt == '-')
-            opt = arg_long(&argv[i][2]);
+            opt = arg_long(&argv[o][2], opts);
         for (; *opt; ++opt)
             func(params, *opt);
     }

@@ -21,6 +21,7 @@
 #include <kora/llist.h>
 #include <stdbool.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include "utils.h"
 
 opt_t options[] = {
@@ -89,37 +90,266 @@ char *usages[] = {
 
 char *__program;
 
-void do_ls(const char *path, void *params)
-{
-}
+#define LS_SHOW_HIDE 1
+#define LS_SHOW_DOTS 2
+#define LS_SHOW_BCKP 4
 
-void ls_args(void *params, char opt)
+#define LS_CTIME 1
+#define MIN_COLUMN_WIDTH 3
+
+struct ls_dir {
+    struct dirent dent;
+    struct stat info;
+    llnode_t node;
+};
+
+struct ls_params {
+    int flags;
+    int columns;
+    int sort;
+    int sort_time;
+    bool newline;
+    bool escape;
+    bool by_columns;
+    bool summary;
+    bool one_by_line;
+    bool use_color;
+    int width;
+
+    int **column_width;
+    int *column_fwidth;
+
+    llhead_t list;
+    struct ls_dir **table;
+};
+
+void ls_parse_args(struct ls_params *params, char opt)
 {
     switch (opt) {
-    case OPT_HELP :
-        arg_usage(__program, options, usages) ;
-        return 0;
-    case OPT_VERS :
+    case 'a' :
+        params->flags |= LS_SHOW_HIDE | LS_SHOW_DOTS;
+        break;
+    case 'A' :
+        params->flags |= LS_SHOW_HIDE;
+        break;
+
+    case OPT_HELP: // --help
+        arg_usage(__program, options, usages);
+        exit(0);
+    case OPT_VERS: // --version
         arg_version(__program);
-        return 0;
+        exit(0);
     default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, __program);
-        return 1;
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
+        exit(1);
     }
+}
+
+int ls_read_dir(const char *path, struct ls_params *params)
+{
+    struct dirent *de;
+    struct ls_dir *di;
+    char fpath[4096];
+    DIR *ctx = opendir(path);
+    if (ctx == NULL) {
+        fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", path);
+        return -1;
+    }
+
+    memset(&params->list, 0, sizeof(params->list));
+    while ((de = readdir(ctx))!= NULL) {
+        if (!(params->flags & LS_SHOW_DOTS)) {
+            if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+                continue;
+        }
+
+        if (!(params->flags & LS_SHOW_HIDE) && de->d_name[0] == '.')
+            continue;
+        if (!(params->flags & LS_SHOW_BCKP) && de->d_name[strlen(de->d_name) - 1] == '~')
+            continue;
+        di = malloc(sizeof(struct ls_dir));
+        memset(&di->node, 0, sizeof(di->node));
+        memcpy(&di->dent, de, sizeof(di->dent));
+        strncpy(fpath, path, 4096);
+        strncat(fpath, "/", 4096);
+        strncat(fpath, de->d_name, 4096);
+        int ret = stat(fpath, &di->info);
+        if (ret < 0) {
+            fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", fpath);
+            return -1;
+        }
+        // if possible display ASAP
+        ll_append(&params->list, &di->node);
+    }
+    return 0;
+}
+
+void ls_table(struct ls_params *params)
+{
+    struct ls_dir *di;
+    params->table = calloc(params->list.count_, sizeof(struct ls_dir *));
+    int fileno = 0;
+    for ll_each(&params->list, di, struct ls_dir, node)
+        params->table[fileno++] = di;
+}
+
+int ls_count_columns(struct ls_params *params)
+{
+    int i, max_cols = MIN(MAX(0, params->width / MIN_COLUMN_WIDTH), params->list.count_ + 1) + 1;
+
+    /* Initialize column length buffers */
+    params->column_width = calloc(max_cols, sizeof(int*));
+    params->column_fwidth = calloc(max_cols, sizeof(int));
+    for (i = 1; i < max_cols; ++i)
+        params->column_width[i] = calloc(i, sizeof(int));
+
+    /* compute row length for each column counts */
+    int fileno;
+    struct ls_dir *di;
+    for (fileno = 0; fileno < params->list.count_; ++fileno) {
+        di = params->table[fileno] ;
+        int len = strlen(di->dent.d_name) + 2;
+        for (i = 1; i < max_cols; ++i) {
+            if (params->column_fwidth[i] >= params->width + 2)
+                continue;
+            int idx = fileno / ((params->list.count_ + i - 1) / i);
+            if (params->column_width[i][idx] < len) {
+                params->column_fwidth[i] += len - params->column_width[i][idx];
+                params->column_width[i][idx] = len;
+            }
+        }
+    }
+
+    /* Find maximum allowed column */
+    while (max_cols-- > 0) {
+        if (params->column_fwidth[i] >= params->width + 2)
+            continue;
+        int cols = MAX(1, max_cols - 1);
+        int rows = (params->list.count_ + cols - 1) / cols;
+        int spot = cols * rows - params->list.count_;
+        if (spot < rows)
+            return cols;
+    }
+    return 1;
+}
+
+void ls_display_many_per_line(const char *path, struct ls_params *params)
+{
+    ls_table(params);
+    int cols = ls_count_columns(params);
+
+    if (params->newline)
+        fputc('\n', stdout);
+    if (params->summary) {
+        fputs(path, stdout);
+        fputs(":\n", stdout);
+    }
+
+    struct ls_dir *di;
+    int i, l, rows = (params->list.count_ + cols - 1) / cols;
+    for (l = 0; l < rows; l++) {
+        for (i = l; i < params->list.count_; i += rows) {
+            di = params->table[i];
+            int col = i / rows;
+            int attr = di->info.st_mode & 0xFFF;
+            int mode = di->info.st_mode >> 12;
+            if (params->use_color) {
+                if (mode == 4)
+                    fputs("\033[94m", stdout);
+                else if (mode != 8)
+                    fputs("\033[95m", stdout);
+                else if (attr & 0100)
+                    fputs("\033[92m", stdout);
+                else
+                    fputs("\033[0m", stdout);
+            }
+            fputs(di->dent.d_name, stdout);
+            if (params->use_color)
+                fputs("\033[0m", stdout);
+            if (col == cols - 1 || (col == cols - 2 && l > MAX(1, params->list.count_ % rows)))
+                fputc('\n', stdout);
+            else {
+                int sp = params->column_width[cols][col] - strlen(di->dent.d_name);
+                while (sp-- > 0)
+                    fputc(' ', stdout);
+            }
+        }
+    }
+
+    params->newline = true;
+    // TODO -- Free
+}
+
+int do_ls(const char *path, struct ls_params *params)
+{
+    if (ls_read_dir(path, params) != 0)
+        return -1;
+    // sort
+    ls_display_many_per_line(path, params);
+    return 0;
+}
+
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int tty_cols(void)
+{
+    int cols = 80;
+    // int lines = 24;
+#ifdef TIOCGSIZE
+    struct ttysize ts;
+    ioctl(STDIN_FILENO, TIOCGSIZE, &ts);
+    cols = ts.ts_cols;
+    // lines = ts.ts_lines;
+#elif defined(TIOCGWINSZ)
+    struct winsize ts;
+    ioctl(STDIN_FILENO, TIOCGWINSZ, &ts);
+    cols = ts.ws_col;
+    // lines = ts.ws_row;
+#endif /* TIOCGSIZE */
+    return cols;
+}
+
+int tty_rows(void)
+{
+    // int cols = 80;
+    int lines = 24;
+#ifdef TIOCGSIZE
+    struct ttysize ts;
+    ioctl(STDIN_FILENO, TIOCGSIZE, &ts);
+    // cols = ts.ts_cols;
+    lines = ts.ts_lines;
+#elif defined(TIOCGWINSZ)
+    struct winsize ts;
+    ioctl(STDIN_FILENO, TIOCGWINSZ, &ts);
+    // cols = ts.ws_col;
+    lines = ts.ws_row;
+#endif /* TIOCGSIZE */
+    return lines;
 }
 
 int main(int argc, char **argv)
 {
     __program = argv[0];
-    int n = arg_parse(argc, argv, ls_args, NULL, options);
-    if (n == 0) {
-        do_ls("", NULL);
+    struct ls_params params;
+    params.flags |= LS_SHOW_BCKP;
+    params.summary = false;
+    params.newline = false;
+    params.use_color = true;
+    params.width = tty_cols();
+
+    int dirs = arg_parse(argc, argv, (parsa_t)ls_parse_args, &params, options);
+
+    if (dirs == 0) {
+        do_ls(".", &params);
     } else {
         int o;
-        for (o = 1; o < argc; ++i) {
+        params.summary = true;
+        for (o = 1; o < argc; ++o) {
             if (argv[o][0] == '-')
                 continue;
-            do_ls(argv[o], NULL);
+            do_ls(argv[o], &params);
         }
     }
     return 0;
