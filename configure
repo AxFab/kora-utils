@@ -13,7 +13,7 @@ EOF
 TOPDIR=$(readlink -f `dirname ${BASH_SOURCE[0]}`)
 GENDIR=`pwd`
 PREFIX=$GENDIR
-TARGET=`$TOPDIR/make/host.sh`
+TARGET=`$TOPDIR/make/host.sh || true`
 if [ "$TOPDIR" == "$GENDIR" ]; then
     echo "This script doesn't allow to persist build parameters on source folder" >&2
     echo "Please build on another directory" >&2
@@ -23,7 +23,7 @@ fi
 
 while (( $# > 0 )); do
     case $1 in
-        --target=*) TARGET=`$TOPDIR/make/host.sh ${1:9}` ;;
+        --target=*) TARGET=`$TOPDIR/make/host.sh ${1:9} || true` ;;
         --prefix=*) PREFIX=`readlink -f ${1:9}` ;;
         *) HELP; exit 1 ;;
     esac

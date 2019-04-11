@@ -18,7 +18,7 @@
 #  The configuration is on `sources.mk`.
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 define fn_objs
-	$(patsubst $(srcdir)/%.c,$(outdir)/%.o,$($(1)))
+	$(patsubst $(srcdir)/%.c,$(outdir)/%.o,$(patsubst $(srcdir)/%.$(ASM_EXT),$(outdir)/%.o,$($(1))))
 endef
 define fn_deps
 	$(patsubst $(srcdir)/%.c,$(outdir)/%.d,$($(1)))
@@ -35,17 +35,39 @@ $(outdir)/%.d: $(srcdir)/%.c
 	$(V) $(CC) -M -o $@ $< $(CFLAGS)
 
 define link_shared
+LIBS += lib$(1)
 lib$(1): $(libdir)/lib$(1).so
+install-lib$(1): $(prefix)/lib/lib$(1).so
 $(libdir)/lib$(1).so: $(call fn_objs,$(2)-y)
 	$(S) mkdir -p $$(dir $$@)
 	$(Q) echo "    LD  $$@"
 	$(V) $(LD) -shared -o $$@ $$^ $($(3))
 endef
 
+define link_bin
+BINS += $(1)
+$(1): $(bindir)/$(1)
+install-$(1): $(prefix)/bin/$(1)
+$(bindir)/$(1): $(call fn_objs,$(2)-y)
+	$(S) mkdir -p $$(dir $$@)
+	$(Q) echo "   LD  $$@"
+	$(V) $(CC) -o $$@ $$^ $($(3))
+endef
+
 clean:
 	$(V) rm -rf $(outdir)
-distclean: clean
 	$(V) rm -rf $(libdir)
 	$(V) rm -rf $(bindir)
 
-.PHONY: clean distclean
+$(prefix)/lib/%: $(libdir)/%
+	$(S) mkdir -p $(dir $@)
+	$(V) $(INSTALL) $< $@
+
+$(prefix)/bin/%: $(bindir)/%
+	$(S) mkdir -p $(dir $@)
+	$(V) $(INSTALL) $< $@
+
+
+.PHONY: clean
+
+

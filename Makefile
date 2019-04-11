@@ -17,8 +17,8 @@
 #  This makefile is more or less generic.
 #  The configuration is on `sources.mk`.
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-topdir ?= $(readlink -f $(dir $(word 1,$(MAKEFILE_LIST))))
-gendir ?= $(pwd)
+topdir ?= $(shell readlink -f $(dir $(word 1,$(MAKEFILE_LIST))))
+gendir ?= $(shell pwd)
 
 include $(topdir)/make/global.mk
 srcdir := $(topdir)/src
@@ -48,3 +48,5 @@ $(eval $(call util,cat))
 $(eval $(call util,ls))
 
 bins: basename cat ls
+
+install-all: install-basename install-cat install-ls

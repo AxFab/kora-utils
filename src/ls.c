@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 {
     __program = argv[0];
     struct ls_params params;
-    params.flags |= LS_SHOW_BCKP;
+    params.flags = LS_SHOW_BCKP;
     params.summary = false;
     params.newline = false;
     params.use_color = true;

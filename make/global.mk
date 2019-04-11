@@ -28,7 +28,7 @@ bindir := $(gendir)/bin
 libdir := $(gendir)/lib
 
 # T A R G E T -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-host ?= $(shell uname -m)-pc-linux-gnu
+host ?= $(shell $(topdir)/make/host.sh)
 host_arch := $(word 1,$(subst -, ,$(host)))
 host_vendor := $(word 2,$(subst -, ,$(host)))
 host_os := $(patsubst $(host_arch)-$(host_vendor)-%,%,$(host))
@@ -50,6 +50,8 @@ CC := $(CROSS_COMPILE)gcc
 CXX := $(CROSS_COMPILE)g++
 LD := $(CROSS_COMPILE)ld
 NM := $(CROSS_COMPILE)nm
+INSTALL := install
+ASM_EXT := s
 
 DATE := $(shell date '+%Y-%m-%d')
 GIT_H := $(shell git --git-dir=$(topdir)/.git rev-parse --short HEAD 2> /dev/null)$(shell if [ -n "$(git --git-dir=$(topdir)/.git status -suno)"]; then echo '+'; fi)
