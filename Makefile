@@ -27,7 +27,7 @@ all: bins
 install: install-all
 
 CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC
-CFLAGS += -Wno-unused-parameter
+CFLAGS += -Wno-unused-parameter -fno-builtin -Dmain=_main
 
 include $(topdir)/make/build.mk
 
