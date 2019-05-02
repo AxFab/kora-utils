@@ -26,7 +26,7 @@ srcdir := $(topdir)/src
 all: bins
 install: install-all
 
-CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC
+CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC -ggdb
 CFLAGS += -Wno-unused-parameter -fno-builtin -Dmain=_main
 
 include $(topdir)/make/build.mk
