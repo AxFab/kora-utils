@@ -27,7 +27,8 @@ all: bins
 install: install-all
 
 CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC -ggdb
-CFLAGS += -Wno-unused-parameter -fno-builtin -Dmain=_main
+CFLAGS += -Wno-unused-parameter -fno-builtin
+# CFLAGS += -Dmain=_main
 
 include $(topdir)/make/build.mk
 
@@ -44,9 +45,10 @@ $(prefix)/bin/$(1): $(bindir)/$(1)
 endef
 
 $(eval $(call util,basename))
+$(eval $(call util,base64))
 $(eval $(call util,cat))
 $(eval $(call util,ls))
 
-bins: basename cat ls
+bins: basename base64 cat ls
 
 install-all: install-basename install-cat install-ls

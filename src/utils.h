@@ -23,6 +23,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
+#  include <unistd.h>
+#endif
+
+void *memrchr(const void *s, int c, size_t n);
+int tty_rows(void);
+int tty_cols(void);
 
 typedef void(*parsa_t)(void *,char);
 
@@ -37,13 +44,64 @@ typedef struct opt {
 #define COPYRIGHT "Copyright 2015-2018 KoraOS\nLicense AGPL <http://gnu.org/licenses/agpl.html>"
 #define HELP "Enter the command \"%s --help\" for more information\n"
 
-#define OPT_HELP (-1)
-#define OPT_VERS (-2)
+#define OPT_HELP (0xff)
+#define OPT_VERS (0xfe)
 #define OPTION(s,l,d) {s,0,l,d}
 #define END_OPTION(d) \
     OPTION(OPT_HELP, "help", "Display help and leave the program"), \
     OPTION(OPT_VERS, "version", "Display version information and leave the program"), \
     {0,0,"",d}
+
+#ifdef __GNUC__
+#  include <sys/ioctl.h>
+#  include <stdio.h>
+#elif defined _WIN32
+#  include  <windows.h>
+#endif
+
+int tty_cols(void)
+{
+    int cols = 80;
+    // int lines = 24;
+#ifdef TIOCGSIZE
+    struct ttysize ts;
+    ioctl(STDIN_FILENO, TIOCGSIZE, &ts);
+    cols = ts.ts_cols;
+    // lines = ts.ts_lines;
+#elif defined(TIOCGWINSZ)
+    struct winsize ts;
+    ioctl(STDIN_FILENO, TIOCGWINSZ, &ts);
+    cols = ts.ws_col;
+    // lines = ts.ws_row;
+#elif defined _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(GeStdHande(STD_OUPUT_HANDLE), &csbi) == TRUE)
+        cols = csbi.srcWinddow.Right - csbi.srcWindow.Left + 1;
+#endif /* TIOCGSIZE */
+    return cols;
+}
+
+int tty_rows(void)
+{
+    // int cols = 80;
+    int lines = 24;
+#ifdef TIOCGSIZE
+    struct ttysize ts;
+    ioctl(STDIN_FILENO, TIOCGSIZE, &ts);
+    // cols = ts.ts_cols;
+    lines = ts.ts_lines;
+#elif defined(TIOCGWINSZ)
+    struct winsize ts;
+    ioctl(STDIN_FILENO, TIOCGWINSZ, &ts);
+    // cols = ts.ws_col;
+    lines = ts.ws_row;
+#elif defined _WIN32
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (GetConsoleScreenBufferInfo(GeStdHande(STD_OUPUT_HANDLE), &csbi) == TRUE)
+        lines = csbi.srcWinddow.Bottom - csbi.srcWindow.Top + 1;
+#endif /* TIOCGSIZE */
+    return lines;
+}
 
 static inline char *arg_long(char *arg, opt_t *opts)
 {
@@ -68,11 +126,24 @@ static inline void arg_usage(char *program, opt_t *opts, char **usages)
         printf("\nwith options:\n");
     for (; opts->sh; opts++) {
         if (opts->lgopt && opts->sh > 0)
-            printf("  -%c  --%-16s \t%s\n", opts->sh, opts->lgopt, opts->desc);
+            printf("  -%c  --%-16s \t", opts->sh, opts->lgopt);
         else if (opts->sh > 0)
-            printf("  -%c    %-16s \t%s\n", opts->sh, "", opts->desc);
+            printf("  -%c    %-16s \t", opts->sh, "");
         else
-            printf("      --%-16s \t%s\n", opts->lgopt, opts->desc);
+            printf("      --%-16s \t", opts->lgopt);
+
+        char *msg = opts->desc;
+        int lg = strlen(msg);
+	do {
+	    int mx = lg;
+	    if (mx > lg) {
+                printf("%s\n", msg);
+		break;
+	    }
+	    write(1, msg, mx);
+	    msg += mx;
+	    lg -= mx;
+        } while (lg > 0);
     }
 }
 
