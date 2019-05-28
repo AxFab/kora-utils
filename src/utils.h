@@ -31,10 +31,10 @@ void *memrchr(const void *s, int c, size_t n);
 int tty_rows(void);
 int tty_cols(void);
 
-typedef void(*parsa_t)(void *,char);
+typedef void(*parsa_t)(void *, unsigned char);
 
 typedef struct opt {
-    char sh;
+    unsigned char sh;
     char resv;
     char *lgopt;
     char *desc;
@@ -103,46 +103,55 @@ int tty_rows(void)
     return lines;
 }
 
-static inline char *arg_long(char *arg, opt_t *opts)
+static inline unsigned char *arg_long(char *arg, opt_t *opts)
 {
     for (; opts->sh; opts++) {
         if (opts->lgopt && strcmp(opts->lgopt, arg) == 0)
             return &opts->sh;
     }
-    return "";
+    return (unsigned char *)"";
 }
 
 static inline void arg_usage(char *program, opt_t *opts, char **usages)
 {
     opt_t *brief = opts;
     for (; brief->sh; brief++);
-    printf("usage:  %s %s\n", program, *usages);
+    dprintf(1, "usage:  %s %s\n", program, *usages);
     while (*(++usages))
-        printf("   or:  %s %s\n", program, *usages);
+        dprintf(1, "   or:  %s %s\n", program, *usages);
 
-    printf("\n%s\n", brief->desc);
+    dprintf(1, "\n%s\n", brief->desc);
 
     if (opts->sh)
-        printf("\nwith options:\n");
+        dprintf(1, "\nwith options:\n");
     for (; opts->sh; opts++) {
-        if (opts->lgopt && opts->sh > 0)
-            printf("  -%c  --%-16s \t", opts->sh, opts->lgopt);
-        else if (opts->sh > 0)
-            printf("  -%c    %-16s \t", opts->sh, "");
+        if (opts->lgopt && opts->sh > 0x20 && opts->sh < 0x7F)
+            dprintf(1, "  -%c  --%-16s   ", opts->sh, opts->lgopt);
+        else if (opts->sh > 0x20 && opts->sh < 0x7F)
+            dprintf(1, "  -%c    %-16s   ", opts->sh, "");
         else
-            printf("      --%-16s \t", opts->lgopt);
+            dprintf(1, "      --%-16s   ", opts->lgopt);
 
         char *msg = opts->desc;
+        int sz = tty_cols() - 30;
         int lg = strlen(msg);
-	do {
-	    int mx = lg;
-	    if (mx > lg) {
-                printf("%s\n", msg);
-		break;
-	    }
-	    write(1, msg, mx);
-	    msg += mx;
-	    lg -= mx;
+        int ld = opts->lgopt != NULL ? strlen(opts->lgopt) : 0;
+        do {
+            int mx = sz;
+            if (msg == opts->desc && ld > 16)
+                mx -= ld - 16;
+            if (mx > lg) {
+                dprintf(1, "%s\n", msg);
+                break;
+            }
+            char *l = memrchr(msg, ' ', mx);
+            if (l != NULL)
+                mx = l - msg;
+            write(1, msg, mx);
+            msg += mx;
+            lg -= mx;
+            if (lg != 0)
+                dprintf(1, "\n                           ");
         } while (lg > 0);
     }
 }
@@ -165,7 +174,7 @@ static inline int arg_parse(int argc, char **argv, parsa_t func, void *params, o
             continue;
         }
 
-        char *opt = &argv[o][1];
+        unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
             opt = arg_long(&argv[o][2], opts);
         for (; *opt; ++opt)

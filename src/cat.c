@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-' || argv[i][0] == '\0')
             continue;
-        char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : &argv[i][1];
+        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
         for (; *arg; ++arg) {
             switch (*arg) {
             case 'A' :

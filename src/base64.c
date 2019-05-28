@@ -14,8 +14,8 @@
  *
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  *   - - - - - - - - - - - - - - -
+ *
  */
 #include "utils.h"
 #include <fcntl.h>
@@ -28,7 +28,7 @@ opt_t options[] = {
     OPTION('i', "ignore-garbadge", "When decoding,ignore non-alphabet characters."),
     OPTION('u', "url-compatible", "Use URL compatible digits."),
     END_OPTION("Base64 encode or decode FILE, or standard input, to standard output.\n."
-        "With no FILE, or when FILE is -, read standard input.")
+    "With no FILE, or when FILE is -, read standard input.")
 };
 
 char *usages[] = {
@@ -47,25 +47,39 @@ int col = 0;
 
 static void push_char(int ch)
 {
-    putc(ch, stdout);
+    fputc(ch, stdout);
     if (width != 0 && (++col % width) == 0)
-        putc('\n', stdout);
+        fputc('\n', stdout);
 }
 
 static void transform_char(unsigned char cin)
 {
     if (state == 0) {
         push_char(digits[cin >> 2]);
-	value = cin & 0x3;
-	state++;
+        value = cin & 3;
+        state++;
+    } else if (state == 1) { // 0x69
+        push_char(digits[value << 4 | cin >> 4]);
+        value = cin & 0xF;
+        state++;
+    } else {
+        push_char(digits[value << 2 | cin >> 6]);
+        push_char(digits[cin & 0x3F]);
+        value = 0;
+        state = 0;
     }
 }
 
 static void transform_finish()
 {
-    if (state != 0)
-        push_char(value);
-    push_char('=');
+    if (state != 0) {
+        push_char(digits[value]);
+        push_char('=');
+        if (state == 1)
+            push_char('=');
+    }
+    value = 0;
+    state = 0;
 }
 
 int main(int argc, char **argv)
@@ -78,10 +92,12 @@ int main(int argc, char **argv)
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-' || argv[i][0] == '\0')
             continue;
-        char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : &argv[i][1];
+        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
         for (; *arg; ++arg) {
             switch (*arg) {
             case 'w' :
+                ++i;
+                width = strtol(argv[i], NULL, 0);
                 break;
             case 'd' :
                 break;
@@ -120,10 +136,11 @@ int main(int argc, char **argv)
                 break ;
             if (lg < 0)
                 return 1;
-	    for (j = 0; lg > 0; --lg, ++j)
-                 transform_char(buf[j]);
+            for (j = 0; j < lg; ++j)
+                transform_char(buf[j]);
         }
-	transform_finish();
+        transform_finish();
+        fputc('\n', stdout);
     }
     return 0;
 }

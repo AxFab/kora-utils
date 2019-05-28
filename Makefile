@@ -33,6 +33,7 @@ CFLAGS += -Wno-unused-parameter -fno-builtin
 include $(topdir)/make/build.mk
 
 define util
+UTILS+=$(1)
 $(1): $(bindir)/$(1)
 install-$(1): $(prefix)/bin/$(1)
 $(bindir)/$(1): $(srcdir)/$(1).c
@@ -47,8 +48,10 @@ endef
 $(eval $(call util,basename))
 $(eval $(call util,base64))
 $(eval $(call util,cat))
+$(eval $(call util,false))
 $(eval $(call util,ls))
+$(eval $(call util,true))
 
-bins: basename base64 cat ls
+bins: $(UTILS)
 
 install-all: install-basename install-cat install-ls

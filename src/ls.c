@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "utils.h"
 
 opt_t options[] = {
@@ -63,7 +64,7 @@ opt_t options[] = {
     OPTION('q', "hide-control-chars", "print ? instead of nongraphic characters"),
     OPTION(0x8b, "show-control-chars", "show nongraphic characters as-is (the default, unless program is 'ls' and output is a terminal)"),
     OPTION('Q', "quote-name", "enclose entry names in double quotes"),
-   OPTION(0x8c, "quoting-style=WORD", "use quoting style WORD for entry names: literal, locale, shell, shell-always, shell-escape, shell-escape-always, c, escape"),
+    OPTION(0x8c, "quoting-style=WORD", "use quoting style WORD for entry names: literal, locale, shell, shell-always, shell-escape, shell-escape-always, c, escape"),
     OPTION('r', "reverse", "reverse order while sorting"),
     OPTION('R', "recursive", "list subdirectories recursively"),
     OPTION('s', "size", "print the allocated size of each file, in blocks"),
@@ -80,7 +81,7 @@ opt_t options[] = {
     OPTION('x', NULL, "list entries by lines instead of by columns"),
     OPTION('X', NULL, "sort alphabetically by entry extension"),
     OPTION('Z', "context", "print any security context of each file"),
-    OPTION('1', NULL, "list one file per line.  Avoid '\n' with -q or -b"),
+    OPTION('1', NULL, "list one file per line.  Avoid '\\n' with -q or -b"),
     END_OPTION("List information about the FILEs (the current directory by default).\nSort entries alphabetically if none of -cftuvSUX nor --sort is specified.")
 };
 char *usages[] = {
@@ -125,7 +126,7 @@ struct ls_params {
     struct ls_dir **table;
 };
 
-void ls_parse_args(struct ls_params *params, char opt)
+void ls_parse_args(struct ls_params *params, unsigned char opt)
 {
     switch (opt) {
     case 'a' :
@@ -137,9 +138,19 @@ void ls_parse_args(struct ls_params *params, char opt)
     case 'B' :
         params->flags &= ~LS_SHOW_BCKP;
         break;
+    case 'c':
+        // Time = ctime
+        break;
+    case 'C':
+        params->format = 0;
+        break;
     case 'l':
-	params->format = 1;
-	break;
+        params->format = 1;
+        break;
+    case 'g':
+        // No owner !
+        params->format = 1;
+        break;
 
     case OPT_HELP: // --help
         arg_usage(__program, options, usages);
@@ -165,7 +176,7 @@ int ls_read_dir(const char *path, struct ls_params *params)
     }
 
     memset(&params->list, 0, sizeof(params->list));
-    while ((de = readdir(ctx))!= NULL) {
+    while ((de = readdir(ctx)) != NULL) {
         if (!(params->flags & LS_SHOW_DOTS)) {
             if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
                 continue;
@@ -181,14 +192,13 @@ int ls_read_dir(const char *path, struct ls_params *params)
         strncpy(fpath, path, 4096);
         strncat(fpath, "/", 4096);
         strncat(fpath, de->d_name, 4096);
-	if (de->d_type == 10) {
-	    readlink(fpath, di->lpath, 256);
-	}
         int ret = lstat(fpath, &di->info);
         if (ret < 0) {
             fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", fpath);
             return -1;
         }
+        if (de->d_type == 10)
+            readlink(fpath, di->lpath, 256);
         // if possible display ASAP
         ll_append(&params->list, &di->node);
     }
@@ -209,7 +219,7 @@ int ls_count_columns(struct ls_params *params)
     int i, max_cols = MIN(MAX(0, params->width / MIN_COLUMN_WIDTH), params->list.count_ + 1) + 1;
 
     /* Initialize column length buffers */
-    params->column_width = calloc(max_cols, sizeof(int*));
+    params->column_width = calloc(max_cols, sizeof(int *));
     params->column_fwidth = calloc(max_cols, sizeof(int));
     for (i = 1; i < max_cols; ++i)
         params->column_width[i] = calloc(i, sizeof(int));
@@ -244,9 +254,40 @@ int ls_count_columns(struct ls_params *params)
     return 1;
 }
 
+static void ls_color(int mode, int attr)
+{
+    switch (mode) {
+    case 1: // p
+        fputs("\033[40;33m", stdout);
+        break;
+    case 2: // c
+    case 6: // b
+        fputs("\033[93m", stdout);
+        break;
+    case 4: // d
+        fputs("\033[94m", stdout);
+        break;
+    case 10: // l
+        fputs("\033[96m", stdout);
+        break;
+    case 12: // s
+        fputs("\033[95m", stdout);
+        break;
+    case 8:
+        if (attr & 0100)
+            fputs("\033[92m", stdout);
+        else
+            fputs("\033[0m", stdout);
+        break;
+    default:
+        fputs("\033[45m", stdout);
+        break;
+    }
+}
+
 void ls_display_many_per_line(const char *path, struct ls_params *params)
 {
-	ls_table(params);
+    ls_table(params);
     int cols = ls_count_columns(params);
 
     if (params->newline)
@@ -264,16 +305,8 @@ void ls_display_many_per_line(const char *path, struct ls_params *params)
             int col = i / rows;
             int attr = di->info.st_mode & 0xFFF;
             int mode = di->info.st_mode >> 12;
-            if (params->use_color) {
-                if (mode == 4)
-                    fputs("\033[94m", stdout);
-                else if (mode != 8)
-                    fputs("\033[95m", stdout);
-                else if (attr & 0100)
-                    fputs("\033[92m", stdout);
-                else
-                    fputs("\033[0m", stdout);
-            }
+            if (params->use_color)
+                ls_color(mode, attr);
             fputs(di->dent.d_name, stdout);
             if (params->use_color)
                 fputs("\033[0m", stdout);
@@ -291,12 +324,11 @@ void ls_display_many_per_line(const char *path, struct ls_params *params)
     // TODO -- Free
 }
 
-const char *mode_txts[] = {
-    "-", "1", "l", "3", "d", "5", "6", "7"
-};
+const char *mode_txt = "0pc3d5b7-9lBsDEF";
+
 const char *rights_txts[] = {
-    "---", "--x", "-w-", "-wx", 
-    "r--", "r-x", "rw-", "rwx", 
+    "---", "--x", "-w-", "-wx",
+    "r--", "r-x", "rw-", "rwx",
 };
 
 void ls_display_one_per_line(const char *path, struct ls_params *params)
@@ -314,35 +346,40 @@ void ls_display_one_per_line(const char *path, struct ls_params *params)
         int i, l;
         int attr = di->info.st_mode & 0xFFF;
         int mode = di->info.st_mode >> 12;
-	
-	fputs(mode_txts[mode & 7], stdout);
+
+        fputc(mode_txt[mode & 15], stdout);
         l = attr;
         for (i = 0; i < 3; ++i) {
             fputs(rights_txts[(l >> 6) & 7], stdout);
             l = l << 3;
         }
 
-	fputs(" ", stdout);
+        fputs(" ", stdout);
 
-	// Inode
-	// User
-	// Size
-	printf("%*d%s ", 5, (int)di->info.st_size, "");
-	// Time
+        // Inode
+        printf("%*d ", 6, (int)di->info.st_ino);
+        // User
+        printf("%*s ", 6, "Fabien");
+        // Size
+        printf("%*d%s ", 5, (int)di->info.st_size, "");
+        // Time
+        char tmbuf[24];
+        struct tm tmstc;
+        localtime_r(&di->info.st_ctime, &tmstc);
+        strftime(tmbuf, 24, "%b %d %H:%M ", &tmstc);
+        fputs(tmbuf, stdout);
 
-        if (params->use_color) {
-            if (mode == 4)
-                fputs("\033[94m", stdout);
-            else if (mode != 8)
-                fputs("\033[95m", stdout);
-            else if (attr & 0100)
-                fputs("\033[92m", stdout);
-            else
-                fputs("\033[0m", stdout);
-        }
+        if (params->use_color)
+            ls_color(mode, attr);
         fputs(di->dent.d_name, stdout);
         if (params->use_color)
             fputs("\033[0m", stdout);
+
+        if (mode == 10) {
+            fputs(" -> ", stdout);
+            fputs(di->lpath, stdout);
+        }
+
         fputc('\n', stdout);
     }
 
@@ -376,9 +413,9 @@ int main(int argc, char **argv)
 
     int dirs = arg_parse(argc, argv, (parsa_t)ls_parse_args, &params, options);
 
-    if (dirs == 0) {
+    if (dirs == 0)
         do_ls(".", &params);
-    } else {
+    else {
         int o;
         params.summary = true;
         for (o = 1; o < argc; ++o) {

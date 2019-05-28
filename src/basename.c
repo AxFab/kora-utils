@@ -51,7 +51,7 @@ int main(int argc, char **argv)
         if (*opt == '-')
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
-            switch (*opt) {
+            switch ((unsigned char)*opt) {
             case 'a': // --multiple
                 multiple = 1;
                 break;

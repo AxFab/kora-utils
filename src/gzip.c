@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         int fd_out = open(path_out, "w");
 
         // Compress
-        gzFile gzfd = gzdopen (fd_out, "w");
+        gzFile gzfd = gzdopen(fd_out, "w");
         do {
             lg = read(fd, buf, BUF_SZ);
             gzwrite(gzfd, buf, lg);
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
         gzclose(gzfd);
 
         // Decompress
-        gzFile gzfd = gzdopen (fd, "r");
+        gzFile gzfd = gzdopen(fd, "r");
         do {
             lg = gzread(gzfd, buf, BUF_SZ);
             write(fd_out, buf, lg);
