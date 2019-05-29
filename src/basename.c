@@ -47,11 +47,11 @@ int main(int argc, char **argv)
             continue;
         }
 
-        char *opt = &argv[o][1];
+        unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
-            switch ((unsigned char)*opt) {
+            switch (*opt) {
             case 'a': // --multiple
                 multiple = 1;
                 break;
