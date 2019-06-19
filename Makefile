@@ -28,7 +28,9 @@ install: install-all
 
 CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC -ggdb
 CFLAGS += -Wno-unused-parameter -fno-builtin
-# CFLAGS += -Dmain=_main
+ifeq ($(target_os),kora)
+CFLAGS += -Dmain=_main
+endif
 
 include $(topdir)/make/build.mk
 
