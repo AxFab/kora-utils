@@ -243,7 +243,7 @@ int ls_count_columns(struct ls_params *params)
 
     /* Find maximum allowed column */
     while (max_cols-- > 0) {
-        if (params->column_fwidth[i] >= params->width + 2)
+        if (params->column_fwidth[max_cols] >= params->width + 2)
             continue;
         int cols = MAX(1, max_cols - 1);
         int rows = (params->list.count_ + cols - 1) / cols;

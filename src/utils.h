@@ -75,7 +75,7 @@ int tty_cols(void)
     // lines = ts.ws_row;
 #elif defined _WIN32
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(GeStdHande(STD_OUPUT_HANDLE), &csbi) == TRUE)
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUPUT_HANDLE), &csbi) == TRUE)
         cols = csbi.srcWinddow.Right - csbi.srcWindow.Left + 1;
 #endif /* TIOCGSIZE */
     return cols;
@@ -97,7 +97,7 @@ int tty_rows(void)
     lines = ts.ws_row;
 #elif defined _WIN32
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(GeStdHande(STD_OUPUT_HANDLE), &csbi) == TRUE)
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUPUT_HANDLE), &csbi) == TRUE)
         lines = csbi.srcWinddow.Bottom - csbi.srcWindow.Top + 1;
 #endif /* TIOCGSIZE */
     return lines;

@@ -25,9 +25,9 @@
 opt_t options[] = {
     OPTION('w', "wrap", "Wrap encoded lines after COLS character (default 76). Use 0 to disable line wrapping."),
     OPTION('d', "decode", "Decode data."),
-    OPTION('i', "ignore-garbadge", "When decoding,ignore non-alphabet characters."),
+    OPTION('i', "ignore-garbage", "When decoding, ignore non-alphabet characters."),
     OPTION('u', "url-compatible", "Use URL compatible digits."),
-    END_OPTION("Base64 encode or decode FILE, or standard input, to standard output.\n."
+    END_OPTION("Base64 encode or decode FILE, or standard input, to standard output.\n"
     "With no FILE, or when FILE is -, read standard input.")
 };
 
@@ -56,14 +56,14 @@ static void transform_char(unsigned char cin)
 {
     if (state == 0) {
         push_char(digits[cin >> 2]);
-        value = cin & 3;
+        value = (cin & 3) << 4;
         state++;
-    } else if (state == 1) { // 0x69
-        push_char(digits[value << 4 | cin >> 4]);
-        value = cin & 0xF;
+    } else if (state == 1) {
+        push_char(digits[value | cin >> 4]);
+        value = (cin & 0xF) << 2;
         state++;
     } else {
-        push_char(digits[value << 2 | cin >> 6]);
+        push_char(digits[value | cin >> 6]);
         push_char(digits[cin & 0x3F]);
         value = 0;
         state = 0;

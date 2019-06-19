@@ -20,18 +20,18 @@
 #include "utils.h"
 
 opt_t options[] = {
-    END_OPTION("Do nothing and return a code for failure.")
+    END_OPTION("Exit with a status code indicating failure.")
 };
 
 char *usages[] = {
-    "[ignored arguments]",
+    "[ignored-arguments]",
     "OPTION",
     NULL,
 };
 
 int main(int argc, char **argv)
 {
-    int o, n;
+    int o, n = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
             n++;
