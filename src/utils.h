@@ -59,6 +59,7 @@ typedef struct opt {
 #  include  <windows.h>
 #endif
 
+
 int tty_cols(void)
 {
     int cols = 80;
@@ -147,7 +148,7 @@ static inline void arg_usage(char *program, opt_t *opts, char **usages)
             char *l = memrchr(msg, ' ', mx);
             if (l != NULL)
                 mx = l - msg;
-            write(1, msg, mx);
+            fwrite(msg, mx, 1, stdout);
             msg += mx;
             lg -= mx;
             if (lg != 0)

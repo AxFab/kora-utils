@@ -25,6 +25,8 @@
 #include <time.h>
 #include "utils.h"
 
+ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+
 opt_t options[] = {
     OPTION('a', "all", "do not ignore entries starting with ."),
     OPTION('A', "almost-all", "do not list implied . and .."),

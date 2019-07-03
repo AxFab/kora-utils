@@ -22,6 +22,8 @@
 #include <unistd.h>
 
 #define BUF_SZ 512
+long read(int fd, char *buf, size_t);
+long write(int fd, const char *buf, size_t);
 
 opt_t options[] = {
     OPTION('A', "show-all", "Equivalent to options -vET"),
