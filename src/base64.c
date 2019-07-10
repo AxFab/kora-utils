@@ -19,9 +19,8 @@
  */
 #include "utils.h"
 #include <fcntl.h>
+#include <unistd.h>
 
-long read(int fd, char *buf, size_t);
-long write(int fd, const char *buf, size_t);
 
 #define BUF_SZ 512
 

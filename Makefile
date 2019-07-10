@@ -53,6 +53,8 @@ $(eval $(call util,cat))
 $(eval $(call util,false))
 $(eval $(call util,ls))
 $(eval $(call util,true))
+$(eval $(call util,pinky))
+$(eval $(call util,cal))
 
 bins: $(UTILS)
 
