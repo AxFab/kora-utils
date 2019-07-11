@@ -51,10 +51,10 @@ int days_on_month(int m, int y)
 {
     ++m;
     if (m == 2)
-	return 28;
+        return 28;
     int r = m % 2;
     if (m > 7)
-	r = 1 - r;
+        r = 1 - r;
     return r ? 31 : 30;
 }
 
@@ -76,8 +76,8 @@ int wday_of_first(int m, int y)
 void display_month(int m, int y)
 {
     while (m >= 12) {
-	m -= 12;
-	y++;
+        m -= 12;
+        y++;
     }
     const char month[32];
     snprintf(month, 32, "%s %d", months[m], y);
@@ -86,7 +86,8 @@ void display_month(int m, int y)
     printf("%*s%*s", ds, month, 21 - ds, "");
 }
 
-void display_wdays() {
+void display_wdays()
+{
     printf("Su Mo Tu We Th Fr Sa ");
 }
 
@@ -95,13 +96,12 @@ void display_week(int w, int d, int m, int t)
     int i;
     d += w * 7;
     for (i = 0; i < 7; ++i) {
-	if (i + d > 0 && i + d <= m) {
-	    if (i + d == t)
-            printf("\033[30;47m%2d\033[0m ", i + d);
-	    else 
-            printf("%2d ", i + d);
-	}
-	else
+        if (i + d > 0 && i + d <= m) {
+            if (i + d == t)
+                printf("\033[30;47m%2d\033[0m ", i + d);
+            else
+                printf("%2d ", i + d);
+        } else
             printf("   ");
     }
 }
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        unsigned char *opt = (unsigned char*)&argv[o][1];
+        unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
@@ -145,30 +145,30 @@ int main(int argc, char **argv)
     int r, R = 8;
 
     for (r = 0; r < R; ++r) {
-    for (c = 0; c < C; ++c) {
-	if (c != 0)
-	    printf("  ");
-        display_month(m + c + r * C, y + 1900);
-    }
-    printf("\n");
-
-    for (c = 0; c < C; ++c) {
-	if (c != 0)
-	    printf("  ");
-        display_wdays();
-    }
-    printf("\n");
-
-    for (i = 0; i < 6; ++i) {
         for (c = 0; c < C; ++c) {
-	    w = wday_of_first(m + c + r * C , y);
             if (c != 0)
-	        printf("  ");
-            display_week(i, w, days_on_month(m + c + r * C, y), c == 0 && r == 0 ? tmd.tm_mday : -1);
-	}
+                printf("  ");
+            display_month(m + c + r * C, y + 1900);
+        }
         printf("\n");
-    }
-    printf("\n");
+
+        for (c = 0; c < C; ++c) {
+            if (c != 0)
+                printf("  ");
+            display_wdays();
+        }
+        printf("\n");
+
+        for (i = 0; i < 6; ++i) {
+            for (c = 0; c < C; ++c) {
+                w = wday_of_first(m + c + r * C, y);
+                if (c != 0)
+                    printf("  ");
+                display_week(i, w, days_on_month(m + c + r * C, y), c == 0 && r == 0 ? tmd.tm_mday : -1);
+            }
+            printf("\n");
+        }
+        printf("\n");
     }
 
     return 0;

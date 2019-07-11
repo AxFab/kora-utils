@@ -23,8 +23,8 @@ opt_t options[] = {
     OPTION('l', NULL, "Produce long format output for each users"),
     OPTION('b', NULL, "Omit the users home directory and shell in long format."),
     OPTION('s', NULL, "Do short format output, this is the default."),
-// #f, omit the line of columns in short format
-// 	w,i,q omit fullname, remote host, idle time
+    // #f, omit the line of columns in short format
+    //  w,i,q omit fullname, remote host, idle time
     END_OPTION("Display user information.")
 };
 
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        unsigned char *opt = (unsigned char*)&argv[o][1];
+        unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
