@@ -50,11 +50,17 @@ endef
 $(eval $(call util,basename))
 $(eval $(call util,base64))
 $(eval $(call util,cat))
+$(eval $(call util,dirname))
 $(eval $(call util,false))
 $(eval $(call util,ls))
+$(eval $(call util,hd))
 $(eval $(call util,true))
 $(eval $(call util,pinky))
+$(eval $(call util,ps))
 $(eval $(call util,cal))
+$(eval $(call util,yes))
+$(eval $(call util,uname))
+$(eval $(call util,xargs))
 
 bins: $(UTILS)
 

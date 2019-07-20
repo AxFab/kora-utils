@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     int w = tmd.tm_wday - tmd.tm_mday % 7;
     int m = tmd.tm_mon;
     int y = tmd.tm_year;
-    int c, C = 2;
+    int c, C = 3;
     int r, R = 8;
 
     for (r = 0; r < R; ++r) {

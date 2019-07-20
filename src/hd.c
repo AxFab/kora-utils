@@ -20,6 +20,7 @@
 #include "utils.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <kora/mcrs.h>
 
 #define BUF_SZ 512
 
@@ -41,18 +42,6 @@ char *usages[] = {
     NULL,
 };
 
-char *notations[] = {
-    "?", "?", "?", "?", "?", "?", "?", "?",
-    "", "^I", "$\n", "?", "?", "M-", "?", "?",
-    "?", "?", "?", "?", "?", "?", "?", "?",
-    "?", "?", "?", "?", "?", "?", "?", "?",
-};
-char notations_lg[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 2, 2, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-};
 
 int main(int argc, char **argv)
 {
@@ -61,8 +50,6 @@ int main(int argc, char **argv)
     int numbers = 0;
     int blanks = 0;
     int squeeze = 0;
-    int row = 0;
-    char last = '\n';
 
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-' || argv[i][0] == '\0')
@@ -121,63 +108,54 @@ int main(int argc, char **argv)
             return 1;
         }
 
+        int addr = 0;
+        int i, by = 0;
         for (;;) {
-            int lg = read(fd, buf, BUF_SZ);
+            int lg = read(fd, &buf[by], BUF_SZ - by);
             if (lg == 0)
                 break ;
             if (lg < 0)
                 return 1;
-            if (numbers + blanks + squeeze == 0) {
 
-                if (write(1, buf, lg) <= 0)
-                    return 1;
-            } else {
-                int st = 0;
-                while (st < lg) {
-                    if (last == '\n' && (numbers > 2 || (numbers && buf[st] != '\n')))
-                        dprintf(1, "%6d  ", ++row);
-                    if (squeeze && last == '\n') {
-                        // TODO - Erase until only one blank line!
-                    }
-
-                    int wr = st;
-                    while ((buf[wr] < 0 || buf[wr] >= 0x20) && wr < lg)
-                        wr++;
-                    if (st != wr) {
-                        if (write(1, & buf[st], wr - st) <= 0)
-                            return 1;
-                    }
-
-                    if (wr == lg) {
-                        //
-                        break;
-                    }
-
-                    switch (buf[wr]) {
-                    case '\n' :
-                        if (blanks & 4)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    case '\t' :
-                        if (blanks & 2)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    default:
-                        if (blanks & 1)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    }
-                    last = buf[wr];
-                    st = wr + 1;
-                }
+            by = 0;
+            while (lg > 16) {
+                printf("%08x ", addr);
+                for (i = 0; i < 8; ++i)
+                    printf(" %02x", buf[by + i]);
+                printf(" ");
+                for (i = 8; i < 16; ++i)
+                    printf(" %02x", buf[by + i]);
+                printf("  |");
+                for (i = 0; i < 8; ++i)
+                    printf("%c", buf[by + i] < 32 ? '.' : buf[by + i]);
+                for (i = 8; i < 16; ++i)
+                    printf("%c", buf[by + i] < 32 ? '.' : buf[by + i]);
+                printf("|");
+                printf("\n");
+                by += 16;
+                lg -= 16;
+                addr += 16;
             }
+
+            memmove(buf, &buf[by], lg);
+            by = lg;
+
         }
+        printf("%08x ", addr);
+        for (i = 0; i < 8; ++i)
+            printf(i < by ? " %02x" : "   ", buf[i]);
+        printf(" ");
+        for (i = 8; i < 16; ++i)
+            printf(i < by ? " %02x" : "   ", buf[i]);
+        printf("  |");
+        for (i = 0; i < MIN(8, by); ++i)
+            printf("%c", buf[i] < 32 ? '.' : buf[i]);
+        for (i = 8; i < MIN(16, by); ++i)
+            printf("%c", buf[i] < 32 ? '.' : buf[i]);
+        printf("|");
+        printf("\n");
+        addr += by;
+        printf("%08x\n", addr);
     }
     return 0;
 }
