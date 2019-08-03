@@ -18,15 +18,17 @@
  *   - - - - - - - - - - - - - - -
  */
 #include "utils.h"
+#include <stdlib.h>
 #include <time.h>
 
 opt_t options[] = {
-    END_OPTION("Exit with a status code indicating sucess.")
+    OPTION('R', "rows", "Display several months, print x row"),
+    OPTION('C', "cols", "Display several months, print x column"),
+    END_OPTION("Display monthly calandar.")
 };
 
 char *usages[] = {
-    "[ignored-arguments]",
-    "OPTION",
+    "[OPTION]",
     NULL,
 };
 
@@ -43,7 +45,6 @@ const char *months[] = {
     "October",
     "November",
     "December",
-    "",
     "",
 };
 
@@ -79,7 +80,7 @@ void display_month(int m, int y)
         m -= 12;
         y++;
     }
-    const char month[32];
+    char month[32];
     snprintf(month, 32, "%s %d", months[m], y);
     int ds = strlen(month);
     ds = (21 - ds) / 2 + ds;
@@ -108,6 +109,8 @@ void display_week(int w, int d, int m, int t)
 
 int main(int argc, char **argv)
 {
+    int c, C = 3;
+    int r, R = 8;
     int o, n = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
@@ -120,6 +123,14 @@ int main(int argc, char **argv)
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
             switch (*opt) {
+            case 'R': // --rows
+                R = strtol(argv[o + 1], NULL, 10);
+                argv[o + 1] = "-";
+                break;
+            case 'C': // --cols
+                C = strtol(argv[o + 1], NULL, 10);
+                argv[o + 1] = "-";
+                break;
             case OPT_HELP: // --help
                 arg_usage(argv[0], options, usages);
                 return 0;
@@ -134,15 +145,13 @@ int main(int argc, char **argv)
     struct tm tmd;
     gmtime_r(&today, &tmd);
 
-    int i, d = (tmd.tm_wday - tmd.tm_mday + 29) % 7;
+    int i;
 
     // printf("Date M%d, Y%d, D%d, W%d\n", tmd.tm_mon, tmd.tm_year, tmd.tm_mday, tmd.tm_wday);
 
     int w = tmd.tm_wday - tmd.tm_mday % 7;
     int m = tmd.tm_mon;
     int y = tmd.tm_year;
-    int c, C = 3;
-    int r, R = 8;
 
     for (r = 0; r < R; ++r) {
         for (c = 0; c < C; ++c) {

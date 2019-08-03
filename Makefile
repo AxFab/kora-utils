@@ -20,19 +20,20 @@
 topdir ?= $(shell readlink -f $(dir $(word 1,$(MAKEFILE_LIST))))
 gendir ?= $(shell pwd)
 
-include $(topdir)/make/global.mk
+include $(topdir)/var/make/global.mk
 srcdir := $(topdir)/src
 
 all: bins
 install: install-all
 
-CFLAGS += -Wall -Wextra -I$(srcdir)/include -fPIC -ggdb
-CFLAGS += -Wno-unused-parameter -fno-builtin
+CFLAGS ?= -Wall -Wextra -Wno-unused-parameter -ggdb
+CFLAGS += -I$(topdir)/include -fPIC 
+CFLAGS += -fno-builtin
 ifeq ($(target_os),kora)
 CFLAGS += -Dmain=_main
 endif
 
-include $(topdir)/make/build.mk
+include $(topdir)/var/make/build.mk
 
 define util
 UTILS+=$(1)
@@ -47,20 +48,24 @@ $(prefix)/bin/$(1): $(bindir)/$(1)
 	$(V) $(INSTALL) $$< $$@
 endef
 
-$(eval $(call util,basename))
-$(eval $(call util,base64))
-$(eval $(call util,cat))
-$(eval $(call util,dirname))
-$(eval $(call util,false))
-$(eval $(call util,ls))
-$(eval $(call util,hd))
-$(eval $(call util,true))
-$(eval $(call util,pinky))
-$(eval $(call util,ps))
-$(eval $(call util,cal))
-$(eval $(call util,yes))
-$(eval $(call util,uname))
-$(eval $(call util,xargs))
+CMDS := $(shell basename -s .c -a $(wildcard $(srcdir)/*.c))
+
+$(foreach cmd,$(CMDS),$(eval $(call util,$(cmd))))
+
+# $(eval $(call util,basename))
+# $(eval $(call util,base64))
+# $(eval $(call util,cat))
+# $(eval $(call util,dirname))
+# $(eval $(call util,false))
+# $(eval $(call util,ls))
+# $(eval $(call util,hd))
+# $(eval $(call util,true))
+# $(eval $(call util,pinky))
+# $(eval $(call util,ps))
+# $(eval $(call util,cal))
+# $(eval $(call util,yes))
+# $(eval $(call util,uname))
+# $(eval $(call util,xargs))
 
 bins: $(UTILS)
 

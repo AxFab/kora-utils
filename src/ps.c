@@ -65,7 +65,7 @@ void ps_tree()
     }
 }
 
-int ps_read(int pid)
+void ps_read(int pid)
 {
     pstat_t *ps = calloc(1, sizeof(pstat_t));
     ll_append(&procs, &ps->node);
@@ -80,13 +80,13 @@ int ps_read(int pid)
             strchr(ps->name, '\n')[0] = '\0';
         } else if (memcmp(path, "PPid:", 5) == 0) {
             strcpy(tmp, strchr(path, '\t') + 1);
-	    ps->ppid = strtol(tmp, NULL, 10);
+            ps->ppid = strtol(tmp, NULL, 10);
         } else if (memcmp(path, "Threads:", 7) == 0) {
             strcpy(tmp, strchr(path, '\t') + 1);
-	    ps->thrds = strtol(tmp, NULL, 10);
+            ps->thrds = strtol(tmp, NULL, 10);
         } else if (memcmp(path, "State:", 6) == 0) {
             strcpy(tmp, strchr(path, '\t') + 1);
-	    ps->state = tmp[0];
+            ps->state = tmp[0];
         }
     }
     fclose(fp);
@@ -95,7 +95,7 @@ void strrncat(char *buf, const char *str, int len)
 {
     int ds = strlen(str);
     memmove(&buf[ds], buf, len - ds);
-    memcpy(buf, str, ds); 
+    memcpy(buf, str, ds);
 }
 
 void ps_write(pstat_t *ps)
@@ -153,17 +153,17 @@ int main(int argc, char **argv)
             }
         }
     }
-    
+
     llist_init(&procs);
     struct dirent *de;
     char *rent;
     printf("PID   PPID  St #Th NAME\n");
     DIR *dir = opendir("/proc");
     while ((de = readdir(dir)) != NULL) {
-	int pid = strtol(de->d_name, &rent, 10);
-	if (rent[0] != '\0')
-	    continue;
-	ps_read(pid);
+        int pid = strtol(de->d_name, &rent, 10);
+        if (rent[0] != '\0')
+            continue;
+        ps_read(pid);
     }
     closedir(dir);
 

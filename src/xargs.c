@@ -54,19 +54,19 @@ int main(int argc, char **argv)
     }
 
     char msg[4096];
-	strcpy(msg, "!");
-        for (o = n; o < argc; ++o) {
-	    strcat(msg, argv[o]);
-	    strcat(msg, " ");
-	}
-	strcat(msg, "%s\n");
-    
+    strcpy(msg, "!");
+    for (o = n; o < argc; ++o) {
+        strcat(msg, argv[o]);
+        strcat(msg, " ");
+    }
+    strcat(msg, "%s\n");
+
     char buf[4096];
     for (;;) {
         int ret = scanf("%s", buf);
-	if (ret <= 0)
-	    break;
-	printf(msg, buf);
+        if (ret <= 0)
+            break;
+        printf(msg, buf);
     }
     return 0;
 }

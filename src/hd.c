@@ -25,16 +25,7 @@
 #define BUF_SZ 512
 
 opt_t options[] = {
-    OPTION('A', "show-all", "Equivalent to options -vET"),
-    OPTION('b', "number-nonblank", "Number non blank lines"),
-    OPTION('e', NULL, "Equivalent to options -vE"),
-    OPTION('E', "show-ends", "Display a $ character at the end of each line"),
-    OPTION('n', "number", "Number all lines"),
-    OPTION('s', "squeeze-blank", "Delete repeated empty lines"),
-    OPTION('t', NULL, "Equivalent to options -vT"),
-    OPTION('T', "show-tabs", "Display tab character as ^I"),
-    OPTION('v', "show-non-printing", "Use ^ and M- notations for control characters, excepted for EOL and TAB"),
-    END_OPTION("Concatenate FILEs or standard input into standard output.")
+    END_OPTION("Dump content of a binary file.")
 };
 
 char *usages[] = {
@@ -47,9 +38,6 @@ int main(int argc, char **argv)
 {
     int i;
     int oflg = 0 ; // O_RDONLY;
-    int numbers = 0;
-    int blanks = 0;
-    int squeeze = 0;
 
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-' || argv[i][0] == '\0')
@@ -57,33 +45,6 @@ int main(int argc, char **argv)
         unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
         for (; *arg; ++arg) {
             switch (*arg) {
-            case 'A' :
-                blanks |= 7;
-                break ;
-            case 'b' :
-                numbers ++;
-                break;
-            case 'e' :
-                blanks |= 5;
-                break ;
-            case 'E' :
-                blanks |= 4;
-                break ;
-            case 'n' :
-                numbers = 2;
-                break;
-            case 's' :
-                squeeze = 1;
-                break ;
-            case 't' :
-                blanks |= 3;
-                break ;
-            case 'T' :
-                blanks |= 2;
-                break ;
-            case 'v' :
-                blanks |= 1;
-                break ;
             case OPT_HELP :
                 arg_usage(argv[0], options, usages) ;
                 return 0;

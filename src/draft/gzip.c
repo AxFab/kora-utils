@@ -17,7 +17,7 @@
  *
  *   - - - - - - - - - - - - - - -
  */
-#include <kora/utils.h>
+#include "utils.h"
 #include <zlib.h>
 
 #define BUF_SZ 512

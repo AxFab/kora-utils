@@ -20,7 +20,7 @@
 #include "utils.h"
 
 opt_t options[] = {
-    END_OPTION("Outpyt reapeteadly STRING, or 'y'.")
+    END_OPTION("Output reapeteadly STRING, or 'y'.")
 };
 
 char *usages[] = {
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        unsigned char *opt = (unsigned char*)&argv[o][1];
+        unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     }
 
     for (;;)
-	printf("%s\n", "y");
+        printf("%s\n", "y");
     return 0;
 }
 
