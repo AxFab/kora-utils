@@ -27,7 +27,7 @@ all: bins
 install: install-all
 
 CFLAGS ?= -Wall -Wextra -Wno-unused-parameter -ggdb
-CFLAGS += -I$(topdir)/include -fPIC 
+CFLAGS += -I$(topdir)/include -fPIC
 CFLAGS += -fno-builtin
 ifeq ($(target_os),kora)
 CFLAGS += -Dmain=_main
@@ -41,7 +41,7 @@ $(1): $(bindir)/$(1)
 install-$(1): $(prefix)/bin/$(1)
 $(bindir)/$(1): $(srcdir)/$(1).c
 	$(S) mkdir -p $$(dir $$@)
-	$(Q) echo "  LD  $$@"
+	$(Q) echo "    LD  $$@"
 	$(V) $(CC) -o $$@ $$< $(CFLAGS)
 $(prefix)/bin/$(1): $(bindir)/$(1)
 	$(S) mkdir -p $$(dir $$@)
@@ -52,21 +52,6 @@ CMDS := $(shell basename -s .c -a $(wildcard $(srcdir)/*.c))
 
 $(foreach cmd,$(CMDS),$(eval $(call util,$(cmd))))
 
-# $(eval $(call util,basename))
-# $(eval $(call util,base64))
-# $(eval $(call util,cat))
-# $(eval $(call util,dirname))
-# $(eval $(call util,false))
-# $(eval $(call util,ls))
-# $(eval $(call util,hd))
-# $(eval $(call util,true))
-# $(eval $(call util,pinky))
-# $(eval $(call util,ps))
-# $(eval $(call util,cal))
-# $(eval $(call util,yes))
-# $(eval $(call util,uname))
-# $(eval $(call util,xargs))
-
 bins: $(UTILS)
 
-install-all: install-basename install-cat install-ls
+install-all: $(patsubst %,install-%,$(CMDS))
