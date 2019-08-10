@@ -30,7 +30,7 @@ opt_t options[] = {
     OPTION('i', "ignore-garbage", "When decoding, ignore non-alphabet characters."),
     OPTION('u', "url-compatible", "Use URL compatible digits."),
     END_OPTION("Base64 encode or decode FILE, or standard input, to standard output.\n"
-    "With no FILE, or when FILE is -, read standard input.")
+               "With no FILE, or when FILE is -, read standard input.")
 };
 
 char *usages[] = {

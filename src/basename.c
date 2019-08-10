@@ -24,7 +24,7 @@ opt_t options[] = {
     OPTION('s', "suffix", "Use the next argument as SUFFIX, to remove"),
     OPTION('z', "zero", "Finish all line by NULL unstead of EOL"),
     END_OPTION("Print PATH without the parent directoies of the last component. "
-    "If requested and find, SUFFIX can be removed from the end of the name.")
+               "If requested and find, SUFFIX can be removed from the end of the name.")
 };
 
 char *usages[] = {
