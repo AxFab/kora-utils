@@ -24,8 +24,9 @@ opt_t options[] = {
     OPTION('l', NULL, "Print the number of lines"),
     OPTION('c', NULL, "Print the count of bytes"),
     OPTION('m', NULL, "Print the count of characters"),
-    OPTION('w', NULL, "Print the count of words"), 
+    OPTION('w', NULL, "Print the count of words"),
     OPTION('L', NULL, "Print the size of the longuest line"),
+    OPTION('x', NULL, "Use punctuation as word separators."),
     END_OPTION("Count newline, words and bytes count of each FILEs.")
 };
 
@@ -40,10 +41,69 @@ char *usages[] = {
 #define WC_CHARS  8
 #define WC_MAXLG  16
 
+int show = 0;
+int num_width = 4;
+int word_meth = 0;
+
+bool is_word(int c)
+{
+    if (word_meth = 1)
+        return isalpha(c) || isdigit(c);
+    return !isspace(c);
+}
+
+void do_wc(FILE *fp, const char* name, int *stats)
+{
+    char buf[4096];
+    int ln = 0, by = 0, ch = 0, wd = 0, mx = 0;
+    while (fgets(buf, 4096, fp)) {
+        ln++;
+        by += strlen(buf);
+        int i;
+        int in = 0, lc = 0;
+        for (i = 0; buf[i]; ++i) {
+            ch++;
+            lc++;
+            if (is_word(buf[i])) {
+                in = 1;
+            } else if (in) {
+                in = 0;
+                wd++;
+            }
+        }
+        if (lc > mx)
+            mx = lc;
+    }
+
+    const char *fmt_int = " %*d";
+    const char *fmt = fmt_int + 1;
+    if (show & WC_LINES) {
+        printf(fmt, num_width, ln);
+        fmt = fmt_int;
+    }
+    if (show & WC_WORDS) {
+        printf(fmt, num_width, wd);
+        fmt = fmt_int;
+    }
+    if (show & WC_BYTES) {
+        printf(fmt, num_width, by);
+        fmt = fmt_int;
+    }
+    if (show & WC_CHARS) {
+        printf(fmt, num_width, ch);
+        fmt = fmt_int;
+    }
+    if (show & WC_MAXLG)
+        printf(fmt, num_width, mx);
+    printf(name == NULL ? "\n" : "%s\n", name);
+    stats[0] += ln;
+    stats[1] += wd;
+    stats[2] += by;
+    stats[3] += ch;
+}
+
 int main(int argc, char **argv)
 {
-    int show = 0;
-    int num_width = 4;
     int o, n = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
@@ -71,6 +131,9 @@ int main(int argc, char **argv)
             case 'L':
                 show |= WC_MAXLG;
                 break;
+            case 'x':
+                word_meth = 1;
+                break;
             case OPT_HELP: // --help
                 arg_usage(argv[0], options, usages);
                 return 0;
@@ -81,46 +144,20 @@ int main(int argc, char **argv)
         }
     }
 
-    if (show == 0) 
+    if (show == 0)
         show = WC_LINES | WC_WORDS | WC_BYTES;
 
-    char buf[4096];
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-') 
-            continue;
-        int ln = 0, by = 0, ch = 0, wd = 0, mx = 0;
-        FILE *fp = fopen(argv[o], "r");
-        while (fgets(buf, 4096, fp)) {
-            ln++;
-            by += strlen(buf);
-            int i;
-            int in = 0, lc = 0;
-            for (i = 0; buf[i]; ++i) {
-                ch++;
-                lc++;
-                //if (isalpha(buf[i]) || isdigit(buf[i])) {
-                if (!isspace(buf[i])) {
-                    in = 1;
-                } else if (in) {
-                    in = 0;
-                    wd++;
-                }
-            }
-            if (lc > mx)
-                mx = lc;
-        }
+    if (n == 0) {
+        do_wc(stdin, NULL, NULL);
+        return 0;
+    }
 
-        if (show & WC_LINES)
-            printf("%*d ", num_width, ln);
-        if (show & WC_WORDS)
-            printf("%*d ", num_width, wd); 
-        if (show & WC_BYTES)
-            printf("%*d ", num_width, by);
-        if (show & WC_CHARS)
-            printf("%*d ", num_width, ch);
-        if (show & WC_MAXLG)
-            printf("%*d ", num_width, mx);
-        printf("%s\n", argv[o]);
+    int stats[5] = { 0 };
+    for (o = 1; o < argc; ++o) {
+        if (argv[o][0] == '-')
+            continue;
+        FILE *fp = fopen(argv[o], "r");
+        do_wc(fp, argv[0], stats);
     }
 
     return 0;

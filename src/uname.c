@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     gethostname(buf, 64);
     printf("%s ", buf);
     printf("%s ", "0.1.1+");
-    printf("%s ", "#0.SP.open");
+    printf("%s ", "#0.SP");
     printf("%s ", "arm");
     printf("%s ", "armv7l");
     printf("%s ", "KoraOS");
