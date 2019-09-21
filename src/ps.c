@@ -98,24 +98,33 @@ void strrncat(char *buf, const char *str, int len)
     memcpy(buf, str, ds);
 }
 
+#define BUF_SZ  128
+
+const char * TBL[] = {
+    " `-- ", " |-- ", " |   ",
+    // " |__ ", " |__ ", " |   ",
+    // " └── ", " ├── ", " │   ",
+};
+
+
 void ps_write(pstat_t *ps)
 {
     printf("%5d %5d ", ps->pid, ps->ppid);
     printf(" %c ", ps->state);
     printf("%3d ", ps->thrds);
-    char graph[32] = { 0 };
+    char graph[BUF_SZ] = { 0 };
     pstat_t *w = ps;
     while (w->parent) {
         if (w == ps) {
             if (w->sibling == NULL)
-                strrncat(graph, " `-- ", 32);
+                strrncat(graph, TBL[0], BUF_SZ);
             else
-                strrncat(graph, " |-- ", 32);
+                strrncat(graph, TBL[1], BUF_SZ);
         } else {
             if (w->sibling == NULL)
-                strrncat(graph, "     ", 32);
+                strrncat(graph, "     ", BUF_SZ);
             else
-                strrncat(graph, " |   ", 32);
+                strrncat(graph, TBL[2], BUF_SZ);
         }
         w = w->parent;
     }

@@ -45,7 +45,7 @@ int show = 0;
 int num_width = 4;
 int word_meth = 0;
 
-bool is_word(int c)
+int is_word(int c)
 {
     if (word_meth = 1)
         return isalpha(c) || isdigit(c);
