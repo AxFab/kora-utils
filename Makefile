@@ -20,7 +20,7 @@
 topdir ?= $(shell readlink -f $(dir $(word 1,$(MAKEFILE_LIST))))
 gendir ?= $(shell pwd)
 
-include $(topdir)/var/make/global.mk
+include $(topdir)/make/global.mk
 srcdir := $(topdir)/src
 
 all: bins
@@ -33,7 +33,7 @@ ifeq ($(target_os),kora)
 CFLAGS += -Dmain=_main
 endif
 
-include $(topdir)/var/make/build.mk
+include $(topdir)/make/build.mk
 
 define util
 UTILS+=$(1)
