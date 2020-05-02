@@ -30,7 +30,7 @@ CFLAGS ?= -Wall -Wextra -Wno-unused-parameter -ggdb
 CFLAGS += -I$(topdir)/include -fPIC
 CFLAGS += -fno-builtin
 ifeq ($(target_os),kora)
-CFLAGS += -Dmain=_main
+CFLAGS += -Dmain=_main -D_GNU_SOURCE
 endif
 
 include $(topdir)/make/build.mk
