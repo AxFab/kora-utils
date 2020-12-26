@@ -82,10 +82,10 @@ int main(int argc, char **argv)
             while (lg > 16) {
                 printf("%08x ", addr);
                 for (i = 0; i < 8; ++i)
-                    printf(" %02x", buf[by + i]);
+                    printf(" %02x", ((unsigned char *)buf)[by + i]);
                 printf(" ");
                 for (i = 8; i < 16; ++i)
-                    printf(" %02x", buf[by + i]);
+                    printf(" %02x", ((unsigned char *)buf)[by + i]);
                 printf("  |");
                 for (i = 0; i < 8; ++i)
                     printf("%c", buf[by + i] < 32 ? '.' : buf[by + i]);
@@ -104,10 +104,10 @@ int main(int argc, char **argv)
         }
         printf("%08x ", addr);
         for (i = 0; i < 8; ++i)
-            printf(i < by ? " %02x" : "   ", buf[i]);
+            printf(i < by ? " %02x" : "   ", ((unsigned char *)buf)[i]);
         printf(" ");
         for (i = 8; i < 16; ++i)
-            printf(i < by ? " %02x" : "   ", buf[i]);
+            printf(i < by ? " %02x" : "   ", ((unsigned char *)buf)[i]);
         printf("  |");
         for (i = 0; i < MIN(8, by); ++i)
             printf("%c", buf[i] < 32 ? '.' : buf[i]);
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         printf("|");
         printf("\n");
         addr += by;
-        printf("%08x\n", addr);
+        // printf("%08x\n", addr);
     }
     return 0;
 }

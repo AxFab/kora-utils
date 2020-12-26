@@ -84,16 +84,37 @@ static void transform_finish()
     state = 0;
 }
 
+int convert_file(int fd)
+{
+    int i;
+    char buf[BUF_SZ];
+    for (;;) {
+        int lg = read(fd, buf, BUF_SZ);
+        if (lg == 0)
+            break;
+        if (lg < 0)
+            return 1;
+        for (i = 0; i < lg; ++i)
+            transform_char(buf[i]);
+    }
+    transform_finish();
+    fputc('\n', stdout);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
-    int i, j;
+    int i;
     digits = digits64;
     width = 76;
-    int oflg = 0 ; // O_RDONLY;
+    int oflg = O_RDONLY;
+    int n = 0;
 
     for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][0] == '\0')
+        if (argv[i][0] != '-' || argv[i][1] == '\0') {
+            n++;
             continue;
+        }
         unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
         for (; *arg; ++arg) {
             switch (*arg) {
@@ -121,28 +142,22 @@ int main(int argc, char **argv)
         }
     }
 
-    char buf[BUF_SZ] ;
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] == '-' && argv[i][1] != '\0')
             continue;
         char *path = argv[i];
-        int fd = strcmp(path, "-") ? open(path, oflg) : 1;
+        int fd = strcmp(path, "-") ? open(path, oflg) : 0;
         if (fd == -1) {
             fprintf(stderr, "Unable to open file %s\n", path);
             return 1;
         }
 
-        for (;;) {
-            int lg = read(fd, buf, BUF_SZ);
-            if (lg == 0)
-                break ;
-            if (lg < 0)
-                return 1;
-            for (j = 0; j < lg; ++j)
-                transform_char(buf[j]);
-        }
-        transform_finish();
-        fputc('\n', stdout);
+        if (convert_file(fd))
+            return 1;
     }
+
+    if (n == 0)
+        return convert_file(0);
+
     return 0;
 }

@@ -39,10 +39,11 @@ define util
 UTILS+=$(1)
 $(1): $(bindir)/$(1)
 install-$(1): $(prefix)/bin/$(1)
-$(bindir)/$(1): $(srcdir)/$(1).c
+$(bindir)/$(1): $(srcdir)/$(1).c $(srcdir)/utils.h
 	$(S) mkdir -p $$(dir $$@)
 	$(Q) echo "    LD  $$@"
 	$(V) $(CC) -o $$@ $$< $(CFLAGS)
+
 $(prefix)/bin/$(1): $(bindir)/$(1)
 	$(S) mkdir -p $$(dir $$@)
 	$(V) $(INSTALL) $$< $$@

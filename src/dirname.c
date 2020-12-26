@@ -20,7 +20,6 @@
 #include "utils.h"
 
 opt_t options[] = {
-    OPTION('a', "multiple", "Accept several operands as PATH"),
     OPTION('z', "zero", "Finish all line by NULL unstead of EOL"),
     END_OPTION("Strip non-directory suffix from PATH. ")
 };
@@ -32,7 +31,7 @@ char *usages[] = {
 
 int main(int argc, char **argv)
 {
-    int multiple = 0;
+    // int multiple = 0;
     char *name = NULL;
 
     int o, n = 0;
@@ -48,9 +47,6 @@ int main(int argc, char **argv)
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
             switch (*opt) {
-            case 'a': // --multiple
-                multiple = 1;
-                break;
             case 'z': // --zero
                 eol = '\0';
                 break;
@@ -82,8 +78,6 @@ int main(int argc, char **argv)
             name[0] = '\0';
 
         printf("%s%c", argv[o], eol);
-        if (multiple == 0)
-            break;
     }
     return 0;
 }

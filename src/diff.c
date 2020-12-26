@@ -34,7 +34,7 @@ char *usages[] = {
 typedef struct ftxt ftxt_t;
 
 struct ftxt {
-    FILE * fp;
+    FILE *fp;
     int rows;
     char **row_cache;
 };
@@ -45,10 +45,9 @@ ftxt_t *ftxt_open(FILE *fp)
     fx->fp = fp;
     char line[512];
     int r = 0;
-    fx->row_cache = calloc(1000, sizeof(char*));
-    while (fgets(line, 512, fp)) {
+    fx->row_cache = calloc(1000, sizeof(char *));
+    while (fgets(line, 512, fp))
         fx->row_cache[r++] = strdup(line);
-    }
     fx->rows = r;
     // printf("Read file, %d lines\n", r);
     return fx;
@@ -57,7 +56,7 @@ ftxt_t *ftxt_open(FILE *fp)
 int ftxt_shr(ftxt_t *fx, const char *ln, int start)
 {
     for (; fx->row_cache[start]; ++start) {
-        char *rw = fx->row_cache[start]; 
+        char *rw = fx->row_cache[start];
         if (strcmp(rw, ln) == 0)
             return start;
     }
@@ -77,9 +76,8 @@ void do_diff(FILE *fp1, FILE *fp2)
     for (;;) {
         char *l1 = f1->row_cache[r1];
         char *l2 = f2->row_cache[r2];
-        if (l1 == NULL || l2 == NULL) {
+        if (l1 == NULL || l2 == NULL)
             break;
-        }
         if (strcmp(l1, l2) == 0) {
             if (tail < ctx) {
                 printf("  %s", l1);
@@ -144,7 +142,7 @@ int main(int argc, char **argv)
     int o, n = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
-            if (n > 1) 
+            if (n > 1)
                 fprintf(stderr, "Extra operand: %s\n", argv[o]);
             else
                 path[n] = argv[o];
@@ -172,9 +170,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (n > 2) {
+    if (n > 2)
         return -1;
-    } else if (n < 2) {
+    else if (n < 2) {
         fprintf(stderr, "Missing operand\n");
         return -1;
     }

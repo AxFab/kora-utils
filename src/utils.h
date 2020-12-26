@@ -41,7 +41,7 @@ typedef struct opt {
 } opt_t;
 
 #define VERSION "1.0.0"
-#define COPYRIGHT "Copyright 2015-2018 KoraOS\nLicense AGPL <http://gnu.org/licenses/agpl.html>"
+#define COPYRIGHT "Copyright 2015-2020 KoraOS\nLicense AGPL <http://gnu.org/licenses/agpl.html>"
 #define HELP "Enter the command \"%s --help\" for more information\n"
 
 #define OPT_HELP (0xff)
@@ -56,7 +56,7 @@ typedef struct opt {
 #  include <sys/ioctl.h>
 #  include <stdio.h>
 #elif defined _WIN32
-#  include  <windows.h>
+#  include <Windows.h>
 #endif
 
 
@@ -76,8 +76,8 @@ int tty_cols(void)
     // lines = ts.ws_row;
 #elif defined _WIN32
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUPUT_HANDLE), &csbi) == TRUE)
-        cols = csbi.srcWinddow.Right - csbi.srcWindow.Left + 1;
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi) == TRUE)
+        cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 #endif /* TIOCGSIZE */
     return cols;
 }
@@ -98,8 +98,8 @@ int tty_rows(void)
     lines = ts.ws_row;
 #elif defined _WIN32
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUPUT_HANDLE), &csbi) == TRUE)
-        lines = csbi.srcWinddow.Bottom - csbi.srcWindow.Top + 1;
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi) == TRUE)
+        lines = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 #endif /* TIOCGSIZE */
     return lines;
 }
@@ -117,21 +117,21 @@ static inline void arg_usage(char *program, opt_t *opts, char **usages)
 {
     opt_t *brief = opts;
     for (; brief->sh; brief++);
-    dprintf(1, "usage:  %s %s\n", program, *usages);
+    printf("usage:  %s %s\n", program, *usages);
     while (*(++usages))
-        dprintf(1, "   or:  %s %s\n", program, *usages);
+        printf("   or:  %s %s\n", program, *usages);
 
-    dprintf(1, "\n%s\n", brief->desc);
+    printf("\n%s\n", brief->desc);
 
     if (opts->sh)
-        dprintf(1, "\nwith options:\n");
+        printf("\nwith options:\n");
     for (; opts->sh; opts++) {
         if (opts->lgopt && opts->sh > 0x20 && opts->sh < 0x7F)
-            dprintf(1, "  -%c  --%-16s   ", opts->sh, opts->lgopt);
+            printf("  -%c  --%-16s   ", opts->sh, opts->lgopt);
         else if (opts->sh > 0x20 && opts->sh < 0x7F)
-            dprintf(1, "  -%c    %-16s   ", opts->sh, "");
+            printf("  -%c    %-16s   ", opts->sh, "");
         else
-            dprintf(1, "      --%-16s   ", opts->lgopt);
+            printf("      --%-16s   ", opts->lgopt);
 
         char *msg = opts->desc;
         int sz = tty_cols() - 30;
@@ -142,7 +142,7 @@ static inline void arg_usage(char *program, opt_t *opts, char **usages)
             if (msg == opts->desc && ld > 16)
                 mx -= ld - 16;
             if (mx > lg) {
-                dprintf(1, "%s\n", msg);
+                printf("%s\n", msg);
                 break;
             }
             char *l = memrchr(msg, ' ', mx);
@@ -152,7 +152,7 @@ static inline void arg_usage(char *program, opt_t *opts, char **usages)
             msg += mx;
             lg -= mx;
             if (lg != 0)
-                dprintf(1, "\n                           ");
+                printf("\n                           ");
         } while (lg > 0);
     }
 }

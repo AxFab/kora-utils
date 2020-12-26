@@ -47,12 +47,12 @@ int word_meth = 0;
 
 int is_word(int c)
 {
-    if (word_meth = 1)
+    if (word_meth == 1)
         return isalpha(c) || isdigit(c);
     return !isspace(c);
 }
 
-void do_wc(FILE *fp, const char* name, int *stats)
+void do_wc(FILE *fp, const char *name, int *stats)
 {
     char buf[4096];
     int ln = 0, by = 0, ch = 0, wd = 0, mx = 0;
@@ -64,9 +64,9 @@ void do_wc(FILE *fp, const char* name, int *stats)
         for (i = 0; buf[i]; ++i) {
             ch++;
             lc++;
-            if (is_word(buf[i])) {
+            if (is_word(buf[i]))
                 in = 1;
-            } else if (in) {
+            else if (in) {
                 in = 0;
                 wd++;
             }
@@ -95,11 +95,13 @@ void do_wc(FILE *fp, const char* name, int *stats)
     }
     if (show & WC_MAXLG)
         printf(fmt, num_width, mx);
-    printf(name == NULL ? "\n" : "%s\n", name);
-    stats[0] += ln;
-    stats[1] += wd;
-    stats[2] += by;
-    stats[3] += ch;
+    printf(name == NULL ? "\n" : " %s\n", name);
+    if (stats) {
+        stats[0] += ln;
+        stats[1] += wd;
+        stats[2] += by;
+        stats[3] += ch;
+    }
 }
 
 int main(int argc, char **argv)
@@ -148,6 +150,7 @@ int main(int argc, char **argv)
         show = WC_LINES | WC_WORDS | WC_BYTES;
 
     if (n == 0) {
+        num_width = 8;
         do_wc(stdin, NULL, NULL);
         return 0;
     }
@@ -157,7 +160,7 @@ int main(int argc, char **argv)
         if (argv[o][0] == '-')
             continue;
         FILE *fp = fopen(argv[o], "r");
-        do_wc(fp, argv[0], stats);
+        do_wc(fp, argv[o], stats);
     }
 
     return 0;

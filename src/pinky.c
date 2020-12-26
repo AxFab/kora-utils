@@ -40,6 +40,18 @@ void display_long_field(const char *nm, const char *val)
     printf("\n");
 }
 
+struct user {
+    // uuid
+    // email
+    // home
+    // shell
+    char login[128];
+    char fullname[128];
+    char ssid[32];
+    time_t since;
+    int where;
+};
+
 void display_long(int uid)
 {
     display_long_field("Uid", "5774");
@@ -98,10 +110,25 @@ int main(int argc, char **argv)
     }
 
     display_long(0);
+
+
     display_header();
     display_short();
-    display_short();
-    display_short();
+    // display_short();
+    // display_short();
+
+    // FILE *info = fopen("/etc/passwd", "r");
+    // if (info == NULL)
+    //     return;
+    // char buf[512];
+    // while (fgets(buf, 512, info)) {
+    //     char * login = strtok(buf, ":\t\n");
+    //     char * passwd = strtok(NULL, ":\t\n");
+    //     char * uid = strtok(NULL, ":\t\n");
+    //     char * gid = strtok(NULL, ":\t\n");
+    //     char * name = strtok(NULL, ":\t\n");
+    //     printf("| %-16s\t%-16s\t%s\n", login, name, uid);
+    // }
     return 0;
 }
 

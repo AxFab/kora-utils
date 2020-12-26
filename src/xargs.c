@@ -66,6 +66,7 @@ int main(int argc, char **argv)
         int ret = scanf("%s", buf);
         if (ret <= 0)
             break;
+        // TODO Execute
         printf(msg, buf);
     }
     return 0;

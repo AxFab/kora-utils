@@ -18,6 +18,8 @@
  *   - - - - - - - - - - - - - - -
  */
 #include "utils.h"
+#include <unistd.h>
+#include <fcntl.h>
 
 opt_t options[] = {
     OPTION('a', "all", "Print all information"),
@@ -37,8 +39,29 @@ char *usages[] = {
     NULL,
 };
 
+void readfile(const char* path, char *buf, size_t len)
+{
+    int fd = open(path, O_RDONLY);
+    read(fd, buf, len);
+    close(fd);
+
+    char *p = strchr(buf, '\n');
+    if (p)
+        *p = '\0';
+}
+
+#define SHOW_NAME 1
+#define SHOW_HOST 2
+#define SHOW_RELEASE 4
+#define SHOW_VERSION 8
+#define SHOW_ARCH 16
+#define SHOW_PROC 32
+#define SHOW_VENDOR 64
+#define SHOW_OS 128
+
 int main(int argc, char **argv)
 {
+    int show = 0;
     int o, n = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
@@ -51,6 +74,33 @@ int main(int argc, char **argv)
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
             switch (*opt) {
+            case 'a':
+                show = 0xff;
+                break;
+            case 's':
+                show |= SHOW_NAME;
+                break;
+            case 'n':
+                show |= SHOW_HOST;
+                break;
+            case 'r':
+                show |= SHOW_RELEASE;
+                break;
+            case 'v':
+                show |= SHOW_VERSION;
+                break;
+            case 'm':
+                show |= SHOW_ARCH;
+                break;
+            case 'p':
+                show |= SHOW_PROC;
+                break;
+            case 'i':
+                show |= SHOW_VENDOR;
+                break;
+            case 'o':
+                show |= SHOW_OS;
+                break;
             case OPT_HELP: // --help
                 arg_usage(argv[0], options, usages);
                 return 0;
@@ -61,15 +111,60 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%s ", "Kora");
     char buf[64];
-    gethostname(buf, 64);
-    printf("%s ", buf);
-    printf("%s ", "0.1.1+");
-    printf("%s ", "#0.SP");
-    printf("%s ", "arm");
-    printf("%s ", "armv7l");
-    printf("%s ", "KoraOS");
+
+    if (show & SHOW_NAME || show == 0) {
+        readfile("/proc/sys/kernel/ostype", buf, 64);
+        printf("%s ", buf);
+    }
+
+    if (show & SHOW_HOST) {
+        gethostname(buf, 64);
+        printf("%s ", buf);
+    }
+
+    if (show & SHOW_RELEASE) {
+        readfile("/proc/sys/kernel/osrelease", buf, 64);
+        printf("%s ", buf);
+    }
+
+    if (show & SHOW_VERSION) {
+        readfile("/proc/sys/kernel/version", buf, 64);
+        printf("%s ", buf);
+    }
+
+    if (show & SHOW_ARCH) {
+#ifdef __ARCH
+        printf("%s ", __ARCH);
+#elif defined __amd64 || defined __x86_64 || defined _M_IA64
+        printf("%s ", "x86_64");
+#elif defined __i386 || defined _M_IX86
+        printf("%s ", "i386");
+#elif defined __arm__ || defined _M_ARM
+        printf("%s ", "aarch64");
+#else
+        printf("%s ", "-");
+#endif
+    }
+
+    if (show & SHOW_PROC) {
+        // printf("%s ", "i486");
+    }
+
+    if (show & SHOW_VENDOR) {
+        // printf("%s ", "pc");
+    }
+
+    if (show & SHOW_OS) {
+#if defined __kora__
+        printf("%s ", "KoraOS");
+#elif defined __linux__
+        printf("%s ", "GNU/Linux");
+#else
+        printf("%s ", "-");
+#endif
+    }
+
     printf("\n");
     return 0;
 }

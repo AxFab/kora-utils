@@ -22,8 +22,12 @@
 #include <time.h>
 
 opt_t options[] = {
+    OPTION('1', NULL, "Display on 1 column, like -C 1"),
+    OPTION('3', NULL, "Display on 3 columns, like -C 3"),
     OPTION('R', "rows", "Display several months, print x row"),
     OPTION('C', "cols", "Display several months, print x column"),
+    // OPTION('j', NULL, "Show day of the year instead of day of month"),
+    // OPTION('y', NULL, "Display the all year"),
     END_OPTION("Display monthly calandar.")
 };
 
@@ -70,7 +74,7 @@ int wday_of_first(int m, int y)
     gmtime_r(&ti, &tm);
     // printf("Date M%d, Y%d, D%d, W%d\n", tm.tm_mon, tm.tm_year, tm.tm_mday, tm.tm_wday);
     int w = - tm.tm_wday;
-    return w < -5 ? w + 7 : w;
+    return w < -6 ? w + 8 : w + 1;
 }
 
 
@@ -107,11 +111,33 @@ void display_week(int w, int d, int m, int t)
     }
 }
 
+time_t parse_date(const char *str)
+{
+    int m = 0;
+    int y = 0;
+    if (strlen(str) == 7 && str[4] == '-') { // "[0-9]{4}-[0-9]{2}"
+        m = strtol(&str[5], NULL, 10) - 1;
+        y = strtol(str, NULL, 10) - 1900;
+    } else
+        return 0;
+
+    struct tm tm;
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_mon = m;
+    tm.tm_year = y;
+    tm.tm_mday = 1;
+    return mktime(&tm);
+}
+
 int main(int argc, char **argv)
 {
-    int c, C = 3;
-    int r, R = 8;
+    int c, C = 1;
+    int r, R = 1;
     int o, n = 0;
+
+    time_t today = time(NULL);
+    time_t showdate = time(NULL);
+
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] != '-') {
             n++;
@@ -123,12 +149,22 @@ int main(int argc, char **argv)
             opt = arg_long(&argv[o][2], options);
         for (; *opt; ++opt) {
             switch (*opt) {
+            case '1':
+                C = 1;
+                break;
+            case '3':
+                C = 3;
+                break;
             case 'R': // --rows
                 R = strtol(argv[o + 1], NULL, 10);
                 argv[o + 1] = "-";
                 break;
             case 'C': // --cols
                 C = strtol(argv[o + 1], NULL, 10);
+                argv[o + 1] = "-";
+                break;
+            case 'd':
+                showdate = parse_date(argv[o + 1]);
                 argv[o + 1] = "-";
                 break;
             case OPT_HELP: // --help
@@ -141,9 +177,16 @@ int main(int argc, char **argv)
         }
     }
 
-    time_t today = time(NULL);
+    if (showdate == 0) {
+        printf("Invalid date!\n");
+        return -1;
+    }
+
+    struct tm tdd;
+    gmtime_r(&today, &tdd);
+
     struct tm tmd;
-    gmtime_r(&today, &tmd);
+    gmtime_r(&showdate, &tmd);
 
     int i;
 
@@ -173,7 +216,7 @@ int main(int argc, char **argv)
                 w = wday_of_first(m + c + r * C, y);
                 if (c != 0)
                     printf("  ");
-                display_week(i, w, days_on_month(m + c + r * C, y), c == 0 && r == 0 ? tmd.tm_mday : -1);
+                display_week(i, w, days_on_month(m + c + r * C, y), m + c + r * C == tdd.tm_mon ? tdd.tm_mday : -1);
             }
             printf("\n");
         }

@@ -22,6 +22,17 @@
 #include "kora/llist.h"
 
 opt_t options[] = {
+
+    // -e All process (not only urrent user )
+    // -r Only running process (Add column PID - TTY - STAT - TIME - CMD )
+    // -C <command> Matching command name
+    // -G <group> Matching group name
+    // -p <proess id>
+    // -U <username | id>
+    // -F Extra full format (UID PID PPID C SZ RSS PSR STIME TTY TIME CMD)
+    // -f Full format  (UID PID PPID STIME TTY TIME CMD)
+    // -H Show process hierachy (No ascii art !?)
+    // -m Show threads after process
     END_OPTION("Show list of processes.")
 };
 
@@ -100,9 +111,9 @@ void strrncat(char *buf, const char *str, int len)
 
 #define BUF_SZ  128
 
-const char * TBL[] = {
-    " `-- ", " |-- ", " |   ",
-    // " |__ ", " |__ ", " |   ",
+const char *TBL[] = {
+    //" `-- ", " |-- ", " |   ",
+    " |__ ", " |__ ", " |   ",
     // " └── ", " ├── ", " │   ",
 };
 
@@ -166,7 +177,6 @@ int main(int argc, char **argv)
     llist_init(&procs);
     struct dirent *de;
     char *rent;
-    printf("PID   PPID  St #Th NAME\n");
     DIR *dir = opendir("/proc");
     while ((de = readdir(dir)) != NULL) {
         int pid = strtol(de->d_name, &rent, 10);
@@ -178,7 +188,12 @@ int main(int argc, char **argv)
 
     ps_tree();
     // ll_sort(&procs, comparator);
+
     pstat_t *ps;
+
+    // PID - TTY - TIME - NAME
+
+    printf("PID   PPID  St #Th NAME\n");
     for ll_each(&procs, ps, pstat_t, node) {
         if (ps->parent)
             continue;

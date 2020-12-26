@@ -53,9 +53,9 @@ int main(int argc, char **argv)
     }
 
     char buf[4096];
-    if (n == 0) {
+    if (n == 0)
         strcpy(buf, "y");
-    } else {
+    else {
         int len = snprintf(buf, 4096, "%s", argv[1]);
         for (o = 2; o < argc; ++o)
             len += snprintf(&buf[len], 4096 - len, " %s", argv[o]);
