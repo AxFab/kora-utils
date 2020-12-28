@@ -210,15 +210,15 @@ int main(int argc, char **argv)
                 strncpy(tmp, "-", 32);
                 break;
             case 'x':
-                ctime_r(&st.st_atim.tv_sec, tmp);
+                ctime_r(&st.st_atime, tmp);
                 *strchr(tmp, '\n') = '\0';
                 break;
             case 'y':
-                ctime_r(&st.st_mtim.tv_sec, tmp);
+                ctime_r(&st.st_mtime, tmp);
                 *strchr(tmp, '\n') = '\0';
                 break;
             case 'z':
-                ctime_r(&st.st_ctim.tv_sec, tmp);
+                ctime_r(&st.st_ctime, tmp);
                 *strchr(tmp, '\n') = '\0';
                 break;
             default:

@@ -48,7 +48,7 @@ struct user {
     char login[128];
     char fullname[128];
     char ssid[32];
-    time_t since;
+    // time_t since;
     int where;
 };
 
