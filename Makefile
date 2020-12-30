@@ -42,17 +42,36 @@ install-$(1): $(prefix)/bin/$(1)
 $(bindir)/$(1): $(srcdir)/$(1).c $(srcdir)/utils.h
 	$(S) mkdir -p $$(dir $$@)
 	$(Q) echo "    LD  $$@"
-	$(V) $(CC) -o $$@ $$< $(CFLAGS)
+	$(V) $(CC) -o $$@ $$< $(CFLAGS) $(LFLAGS)
 
 $(prefix)/bin/$(1): $(bindir)/$(1)
 	$(S) mkdir -p $$(dir $$@)
 	$(V) $(INSTALL) $$< $$@
 endef
 
+define util_z
+UTILS+=$(1)
+$(1): $(bindir)/$(1)
+install-$(1): $(prefix)/bin/$(1)
+$(bindir)/$(1): $(srcdir)/others/$(1).c $(srcdir)/utils.h
+	$(S) mkdir -p $$(dir $$@)
+	$(Q) echo "    LD  $$@"
+	$(V) $(CC) -o $$@ $$< $(CFLAGS) $(LFLAGS) -lz
+
+$(prefix)/bin/$(1): $(bindir)/$(1)
+	$(S) mkdir -p $$(dir $$@)
+	$(V) $(INSTALL) $$< $$@
+endef
+
+
 CMDS := $(shell basename -s .c -a $(wildcard $(srcdir)/*.c))
 
 $(foreach cmd,$(CMDS),$(eval $(call util,$(cmd))))
 
+OTHS := gzip
+
+$(eval $(call util_z,gzip))
+
 bins: $(UTILS)
 
-install-all: $(patsubst %,install-%,$(CMDS))
+install-all: $(patsubst %,install-%,$(CMDS)) $(patsubst %,install-%,$(OTHS))
