@@ -68,7 +68,7 @@ CMDS := $(shell basename -s .c -a $(wildcard $(srcdir)/*.c))
 
 $(foreach cmd,$(CMDS),$(eval $(call util,$(cmd))))
 
-OTHS := gzip
+# OTHS := gzip
 
 $(eval $(call util_z,gzip))
 

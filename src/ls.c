@@ -17,15 +17,15 @@
  *
  *   - - - - - - - - - - - - - - -
  */
-#include <kora/mcrs.h>
-#include <kora/llist.h>
+#include "mcrs.h"
+#include "llist.h"
 #include <stdbool.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <time.h>
 #include "utils.h"
 
-ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+// ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
 
 opt_t options[] = {
     OPTION('a', "all", "do not ignore entries starting with ."),
@@ -194,7 +194,7 @@ int ls_read_dir(const char *path, struct ls_params *params)
         strncpy(fpath, path, 4096);
         strncat(fpath, "/", 4096);
         strncat(fpath, de->d_name, 4096);
-        int ret = lstat(fpath, &di->info);
+        int ret = stat(fpath, &di->info);
         if (ret < 0) {
             fprintf(stderr, "ls: cannot access '%s': No such file or directory\n", fpath);
             return -1;

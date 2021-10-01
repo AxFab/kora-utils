@@ -18,7 +18,7 @@
  *   - - - - - - - - - - - - - - -
  */
 #include "utils.h"
-#include <kora/mcrs.h>
+#include "mcrs.h"
 
 opt_t options[] = {
     OPTION('u', NULL, "Use unify format"),
@@ -177,14 +177,26 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    FILE *f1 = fopen(path[0], "r");
+    if (f1 == NULL) {
+        fprintf(stderr, "diff: %s: %s", path[0], strerror(errno));
+        return -1;
+    }
+    FILE *f2 = fopen(path[1], "r");
+    if (f2 == NULL) {
+        fprintf(stderr, "diff: %s: %s", path[1], strerror(errno));
+        fclose(f1);
+        return -1;
+    }
 
     if (ctx != 0) {
         printf("\033[1m--- %s\033[0m\n", path[0]);
         printf("\033[1m+++ %s\033[0m\n", path[1]);
     }
-    FILE *f1 = fopen(path[0], "r");
-    FILE *f2 = fopen(path[1], "r");
     do_diff(f1, f2);
+
+    fclose(f1);
+    fclose(f2);
     return 0;
 }
 

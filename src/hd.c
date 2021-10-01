@@ -20,7 +20,7 @@
 #include "utils.h"
 #include <fcntl.h>
 #include <unistd.h>
-#include <kora/mcrs.h>
+#include "mcrs.h"
 
 #define BUF_SZ 512
 

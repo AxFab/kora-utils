@@ -19,7 +19,7 @@
  */
 #include "utils.h"
 #include "dirent.h"
-#include "kora/llist.h"
+#include "llist.h"
 
 opt_t options[] = {
 
