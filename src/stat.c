@@ -104,7 +104,6 @@ int main(int argc, char **argv)
         "Access: %x\n"
         "Modify: %y\n"
         "Change: %z\n"
-        "Access: %x\n"
         " Birth: %w\n");
 
         buf[0] = '\0';
@@ -114,9 +113,10 @@ int main(int argc, char **argv)
             while (format[lg] != '%' && format[lg] != '\0')
                 lg++;
             if (lg != 0) {
+                char t = format[lg];
                 format[lg] = '\0';
                 strncat(buf, format, BUF_SZ);
-                format[lg] = '%';
+                format[lg] = t;
                 format += lg;
                 continue;
             }
