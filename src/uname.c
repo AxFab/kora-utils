@@ -1,6 +1,6 @@
 /*
  *      This file is part of the KoraOS project.
- *  Copyright (C) 2015-2019  <Fabien Bavent>
+ *  Copyright (C) 2015-2021  <Fabien Bavent>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -39,7 +39,7 @@ char *usages[] = {
     NULL,
 };
 
-void readfile(const char* path, char *buf, size_t len)
+void readfile(const char *path, char *buf, size_t len)
 {
     int fd = open(path, O_RDONLY);
     read(fd, buf, len);
@@ -168,4 +168,3 @@ int main(int argc, char **argv)
     printf("\n");
     return 0;
 }
-

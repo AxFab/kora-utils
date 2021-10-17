@@ -1,6 +1,6 @@
 /*
  *      This file is part of the KoraOS project.
- *  Copyright (C) 2015-2019  <Fabien Bavent>
+ *  Copyright (C) 2015-2021  <Fabien Bavent>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -14,14 +14,23 @@
  *
  *  You should have received a copy of the GNU Affero General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *   - - - - - - - - - - - - - - -
  *
+ *   - - - - - - - - - - - - - - -
  */
 #include "utils.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#define S_ISREG(m) (m & _S_IFMT == _S_IFREG)
+#define S_ISDIR(m) (m & _S_IFMT == _S_IFDIR)
+#define S_ISCHR(m) (m & _S_IFMT == _S_IFCHR)
+#define S_ISBLK(m) 0
+#define S_ISFIFO(m) (m & _S_IFMT == _S_IFIFO)
+#define S_ISLNK(m) 0
+#define S_ISSOCK(m) 0
+#endif
 
 #define BUF_SZ 4096
 
@@ -39,7 +48,7 @@ char *usages[] = {
     NULL,
 };
 
-const char * _rights[] = {
+const char *_rights[] = {
     "---", "--x", "-w-", "-wx",
     "r--", "r-x", "rw-", "rwx",
 };
@@ -98,13 +107,13 @@ int main(int argc, char **argv)
         // If symlink and dreference...
 
         char *format = strdup("  File: %n\n"
-        "  Size: %s\t\tBlocks: %b\t\tIO Block: %B %F\n"
-        "Device: %dh/%Dd\t\tInode: %i\t\tLinks: %h\n"
-        "Access: (%a/%A)  Uid: (%5u/%8U)  Gid: (%5g/%8G)\n"
-        "Access: %x\n"
-        "Modify: %y\n"
-        "Change: %z\n"
-        " Birth: %w\n");
+                              "  Size: %s\t\tBlocks: %b\t\tIO Block: %B %F\n"
+                              "Device: %dh/%Dd\t\tInode: %i\t\tLinks: %h\n"
+                              "Access: (%a/%A)  Uid: (%5u/%8U)  Gid: (%5g/%8G)\n"
+                              "Access: %x\n"
+                              "Modify: %y\n"
+                              "Change: %z\n"
+                              " Birth: %w\n");
 
         buf[0] = '\0';
 
@@ -152,12 +161,14 @@ int main(int argc, char **argv)
                 strncat(tmp, _rights[(st.st_mode >> 3) & 07], 32);
                 strncat(tmp, _rights[(st.st_mode >> 0) & 07], 32);
                 break;
+#ifndef _WIN32
             case 'b':
                 snprintf(tmp, 32, "%ld", st.st_blocks);
                 break;
             case 'B':
                 snprintf(tmp, 32, "%ld", st.st_blksize);
                 break;
+#endif
             case 'd':
                 snprintf(tmp, 32, "%lx", st.st_dev);
                 break;

@@ -1,6 +1,6 @@
 /*
  *      This file is part of the KoraOS project.
- *  Copyright (C) 2015-2019  <Fabien Bavent>
+ *  Copyright (C) 2015-2021  <Fabien Bavent>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -38,9 +38,8 @@ int main(int argc, char **argv)
 
     int o;
     for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
+        if (argv[o][0] != '-')
             break;
-        }
 
         unsigned char *opt = (unsigned char *)&argv[o][1];
         if (*opt == '-')
@@ -109,4 +108,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-

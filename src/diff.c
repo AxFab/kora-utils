@@ -1,6 +1,6 @@
 /*
  *      This file is part of the KoraOS project.
- *  Copyright (C) 2015-2019  <Fabien Bavent>
+ *  Copyright (C) 2015-2021  <Fabien Bavent>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,7 @@
  */
 #include "utils.h"
 #include "mcrs.h"
+#include <errno.h>
 
 opt_t options[] = {
     OPTION('u', NULL, "Use unify format"),
@@ -199,4 +200,3 @@ int main(int argc, char **argv)
     fclose(f2);
     return 0;
 }
-
