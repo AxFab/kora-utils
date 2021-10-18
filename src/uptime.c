@@ -67,7 +67,8 @@ int main(int argc, char **argv)
     char buffer[128];
     FILE *fp = fopen("/proc/uptime", "r");
     if (fp) {
-        fread(buffer, 128, 1, fp);
+        int len = fread(buffer, 128, 1, fp);
+        buffer[len] = '\0';
         upT -= strtol(buffer, NULL, 10);
         fclose(fp);
     }
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
     gmtime_r(&upT, &up);
     up.tm_year += 1900;
 
-    int diff = nowT - upT;
+    int diff = (int)(nowT - upT);
     int dDay = diff / 3600 / 24;
     int dHours = (diff / 3600) % 24;
     int dMin = (diff / 60) % 60;

@@ -23,11 +23,11 @@
 #include <sys/stat.h>
 
 #ifdef _WIN32
-#define S_ISREG(m) (m & _S_IFMT == _S_IFREG)
-#define S_ISDIR(m) (m & _S_IFMT == _S_IFDIR)
-#define S_ISCHR(m) (m & _S_IFMT == _S_IFCHR)
+#define S_ISREG(m) ((m & _S_IFMT) == _S_IFREG)
+#define S_ISDIR(m) ((m & _S_IFMT) == _S_IFDIR)
+#define S_ISCHR(m) ((m & _S_IFMT) == _S_IFCHR)
 #define S_ISBLK(m) 0
-#define S_ISFIFO(m) (m & _S_IFMT == _S_IFIFO)
+#define S_ISFIFO(m) ((m & _S_IFMT) == _S_IFIFO)
 #define S_ISLNK(m) 0
 #define S_ISSOCK(m) 0
 #endif

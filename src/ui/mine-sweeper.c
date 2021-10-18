@@ -259,7 +259,7 @@ int main()
     gfx_context("win32");
 #endif
 
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
     _.win = gfx_create_window(320, 370);
     _.font = gfx_font("Arial", 10, GFXFT_BOLD);
     _.board = NULL;
