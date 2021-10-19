@@ -20,11 +20,14 @@
 #include "utils.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "mcrs.h"
 
 #define BUF_SZ 512
 
 opt_t options[] = {
+    OPTION('r', "range", ""),
     END_OPTION("Dump content of a binary file.")
 };
 
@@ -38,6 +41,9 @@ int main(int argc, char **argv)
 {
     int i;
     int oflg = 0 ; // O_RDONLY;
+    __off_t s_range = 0;
+    __off_t e_range = -1;
+    char *sv_str;
 
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] != '-' || argv[i][0] == '\0')
@@ -45,6 +51,12 @@ int main(int argc, char **argv)
         unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
         for (; *arg; ++arg) {
             switch (*arg) {
+            case 'r':
+                s_range = strtol(argv[i+1], &sv_str, 10);
+                if (*sv_str == '-')
+                    e_range = strtol(&sv_str[1], NULL, 10);
+                i++;
+                break;
             case OPT_HELP :
                 arg_usage(argv[0], options, usages) ;
                 return 0;
@@ -69,17 +81,41 @@ int main(int argc, char **argv)
             return 1;
         }
 
-        int addr = 0;
+        if (s_range != 0) {
+            lseek(fd, s_range, SEEK_CUR);
+        }
+        int addr = s_range;
         int i, by = 0;
+        bool prev_zeros = false;
+        bool skip_zeros = false;
         for (;;) {
             int lg = read(fd, &buf[by], BUF_SZ - by);
             if (lg == 0)
-                break ;
+                break;
             if (lg < 0)
                 return 1;
 
+            lg += by;
             by = 0;
-            while (lg > 16) {
+            while (lg >= 16) {
+                uint32_t* pz = (uint32_t*)&buf[by];
+                if (pz[0] == 0 && pz[1] == 0 && pz[2] == 0 && pz[3] == 0) {
+                    if (prev_zeros) {
+                        skip_zeros = true;
+                        by += 16;
+                        lg -= 16;
+                        addr += 16;
+                        continue;
+                    }
+                    prev_zeros = true;
+                }
+                else {
+                    prev_zeros = false;
+                    if (skip_zeros) {
+                        printf("%08x    *** ***\n", addr - 16);
+                        skip_zeros = false;
+                    }
+                }
                 printf("%08x ", addr);
                 for (i = 0; i < 8; ++i)
                     printf(" %02x", ((unsigned char *)buf)[by + i]);
@@ -98,25 +134,27 @@ int main(int argc, char **argv)
                 addr += 16;
             }
 
-            memmove(buf, &buf[by], lg);
+            if (lg != 0)
+                memmove(buf, &buf[by], lg);
             by = lg;
 
         }
-        printf("%08x ", addr);
-        for (i = 0; i < 8; ++i)
-            printf(i < by ? " %02x" : "   ", ((unsigned char *)buf)[i]);
-        printf(" ");
-        for (i = 8; i < 16; ++i)
-            printf(i < by ? " %02x" : "   ", ((unsigned char *)buf)[i]);
-        printf("  |");
-        for (i = 0; i < MIN(8, by); ++i)
-            printf("%c", buf[i] < 32 ? '.' : buf[i]);
-        for (i = 8; i < MIN(16, by); ++i)
-            printf("%c", buf[i] < 32 ? '.' : buf[i]);
-        printf("|");
-        printf("\n");
-        addr += by;
-        // printf("%08x\n", addr);
+        if (by != 0) {
+            printf("%08x ", addr);
+            for (i = 0; i < 8; ++i)
+                printf(i < by ? " %02x" : "   ", ((unsigned char*)buf)[i]);
+            printf(" ");
+            for (i = 8; i < 16; ++i)
+                printf(i < by ? " %02x" : "   ", ((unsigned char*)buf)[i]);
+            printf("  |");
+            for (i = 0; i < MIN(8, by); ++i)
+                printf("%c", buf[i] < 32 ? '.' : buf[i]);
+            for (i = 8; i < MIN(16, by); ++i)
+                printf("%c", buf[i] < 32 ? '.' : buf[i]);
+            printf("|");
+            printf("\n");
+            addr += by;
+        }
     }
     return 0;
 }
