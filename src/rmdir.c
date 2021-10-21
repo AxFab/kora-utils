@@ -20,44 +20,38 @@
 #include "utils.h"
 
 opt_t options[] = {
-    END_OPTION("Output reapeteadly STRING, or 'y'.")
+    OPTION('v', "verbose", "explain what is being done"),
+    END_OPTION("...")
 };
 
-char *usages[] = {
-    "[STRING]",
+char* usages[] = {
+    "[OPTION]... [FILE]...",
     NULL,
 };
 
 char* __program;
 
-void yes_parse_args(void* cfg, unsigned char arg)
+void rmdir_parse_args(void* param, unsigned char arg)
 {
-    switch (arg) {
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    }
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    int o, n = 0;
+    int o;
     __program = argv[0];
-    int n = arg_parse(argc, argv, yes_parse_args, NULL, options);
 
-    char buf[4096];
-    if (n == 0)
-        strcpy(buf, "y");
-    else {
-        int len = snprintf(buf, 4096, "%s", argv[1]);
-        for (o = 2; o < argc; ++o)
-            len += snprintf(&buf[len], 4096 - len, " %s", argv[o]);
+    int n = arg_parse(argc, argv, (parsa_t)rmdir_parse_args, &_, options);
+    if (n == 0) {
+        fprintf(stderr, "Missing operand.\n");
+        arg_usage(__program, options, usages);
+        return -1;
     }
 
-    for (;;)
-        printf("%s\n", buf);
-    return 0;
+    for (o = 1; o < argc; ++o) {
+        if (argv[o][0] == '-')
+            continue;        
+        // TODO
+    }
+
+    return -1;
 }

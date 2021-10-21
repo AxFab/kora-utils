@@ -23,14 +23,14 @@
 #include <sys/stat.h>
 
 opt_t options[] = {
-    // OPTION('p', "pretty", "Show pretty format"),
-    // OPTION('s', "since", "System up since"),
+    OPTION('a', NULL, "Update only the access date"),
+    OPTION('m', NULL, "Update only the modified date"),
+    OPTION('c', NULL, "Do not create the file if it doens't exists"),
     END_OPTION("Update the access and modification time of a file.")
 };
 
 char *usages[] = {
-    "[ignored-arguments]",
-    "OPTION",
+    "[OPTION] [FILE]...",
     NULL,
 };
 
