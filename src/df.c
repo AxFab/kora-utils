@@ -18,6 +18,7 @@
  *   - - - - - - - - - - - - - - -
  */
 #include "utils.h"
+#include <sys/vfs.h>
 #include <unistd.h>
 
 opt_t options[] = {
@@ -47,7 +48,7 @@ char* __program;
 
 struct param {
     int readable;
-    int exponent;
+    unsigned exponent;
     int fstype;
     int showall;
 } _;
@@ -76,6 +77,9 @@ void df_parse_args(void* cfg, unsigned char arg)
     case OPT_VERS: // --version
         arg_version(__program);
         exit(0);
+    default:
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, arg, __program);
+        exit(1);
     }
 }
 
@@ -103,7 +107,7 @@ void df_fstype(unsigned short type, char* buf, int len)
     }
 }
 
-void show_mounted_point(const char *path) 
+int show_mounted_point(const char *path)
 {
     char tmp[1024];
     // Get mounted point of path
@@ -121,10 +125,10 @@ void show_mounted_point(const char *path)
         return -1;
     }
 
-    int size = fs.f_blocks / 1024 * fs.f_frsize;
-    int used = (fs.f_blocks - fs.f_bfree) / 1024 * fs.f_frsize;
-    int avail = fs.f_bfree / 1024 * fs.f_frsize;
-    int perc = (fs.f_blocks - fs.f_bfree) * 100 / fs.f_blocks;
+    unsigned size = fs.f_blocks / 1024 * fs.f_frsize;
+    unsigned used = (fs.f_blocks - fs.f_bfree) / 1024 * fs.f_frsize;
+    unsigned avail = fs.f_bfree / 1024 * fs.f_frsize;
+    unsigned perc = (fs.f_blocks - fs.f_bfree) * 100 / fs.f_blocks;
 
     char blocks[36];
     if (_.readable == 0)
@@ -132,28 +136,28 @@ void show_mounted_point(const char *path)
     else {
         char* xsi = "KMGTPEYZ";
 
-        int psize = 0, osize = 0;
+        unsigned psize = 0, osize = 0;
         while (size > _.exponent) {
             psize = (size % _.exponent) * 100 / _.exponent;
             size = size / _.exponent;
             osize++;
         }
 
-        int pused = 0, oused = 0;
+        unsigned pused = 0, oused = 0;
         while (used > _.exponent) {
             pused = (used % _.exponent) * 100 / _.exponent;
             used = used / _.exponent;
             oused++;
         }
 
-        int pavail = 0, oavail = 0;
+        unsigned pavail = 0, oavail = 0;
         while (avail > _.exponent) {
             pavail = (avail % _.exponent) * 100 / _.exponent;
             avail = avail / _.exponent;
             oavail++;
         }
 
-        snprintf(blocks, 36, "%4d.%02d%c  %4d.%02d%c  %4d.%02d%c", 
+        snprintf(blocks, 36, "%4u.%02u%c  %4u.%02u%c  %4u.%02u%c",
             size, psize, xsi[osize], 
             used, pused, xsi[oused], 
             avail, pavail, xsi[oavail]);
@@ -165,6 +169,7 @@ void show_mounted_point(const char *path)
         df_fstype(fs.f_type, fstype, 14);
 
     printf("%-24s  %s%s  %3d%%  %s", tmp, fstype, blocks, perc, tmp);
+    return 0;
 }
 
 int main(int argc, char** argv)
@@ -187,11 +192,13 @@ int main(int argc, char** argv)
     else
         printf("File system               File system   1K-blocks Used      Avail.   Use%%  Mounted on\n");
 
+    int ret = 0;
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] == '-')
             continue;
-        show_mounted_point(argv[o]);
+        if (show_mounted_point(argv[o]) != 0)
+            ret = -1;
     }
 
-    return 0;
+    return ret;
 }

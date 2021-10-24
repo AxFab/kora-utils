@@ -319,10 +319,6 @@ int utf8char(int uni, char *buf);
 
 int main()
 {
-#ifdef _WIN32
-    // Sleep(5 * 1000);
-    gfx_context("win32");
-#endif
     gfx_t *win = gfx_create_window(260, 320);
     fonts[FO_TITLE] = gfx_font("Arial", 13, 0);
     fonts[FO_BTN] = gfx_font("Arial", 13, 0);

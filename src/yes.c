@@ -44,9 +44,9 @@ void yes_parse_args(void* cfg, unsigned char arg)
 
 int main(int argc, char **argv)
 {
-    int o, n = 0;
+    int o, n;
     __program = argv[0];
-    int n = arg_parse(argc, argv, yes_parse_args, NULL, options);
+    n = arg_parse(argc, argv, yes_parse_args, NULL, options);
 
     char buf[4096];
     if (n == 0)

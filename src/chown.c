@@ -20,7 +20,9 @@
 #include "utils.h"
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <stdbool.h>
+#include <errno.h>
 
 opt_t options[] = {
     OPTION('v', "verbose", "explain what is being done"),
@@ -56,6 +58,9 @@ void chmod_parse_args(void* cfg, unsigned char arg)
     case OPT_VERS: // --version
         arg_version(__program);
         exit(0);
+    default:
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, arg, __program);
+        exit(1);
     }
 }
 
@@ -66,7 +71,6 @@ int chown_read_param(const char* arg)
 
 int do_chown(const char* file)
 {
-    int ret;
     struct stat st;
     if (_.oper != 0) {
         if (stat(file, &st) != 0) {
@@ -89,10 +93,10 @@ int do_chown(const char* file)
 
 int main(int argc, char** argv)
 {
-    int o, n = 0;
+    int o, n;
     __program = argv[0];
     memset(&_, 0, sizeof(_));
-    int n = arg_parse(argc, argv, chmod_parse_args, NULL, options);
+    n = arg_parse(argc, argv, chmod_parse_args, NULL, options);
 
     if (n == 0) {
         arg_usage(__program, options, usages);

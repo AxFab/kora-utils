@@ -22,7 +22,10 @@
 #include <dirent.h>
 #include <time.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <errno.h>
 #include "utils.h"
 
 int do_copy(const char* dst, const char* src);
@@ -180,14 +183,14 @@ int do_copy_data(int dst_fd, int src_fd, const char* dst, const char* src)
 
 int do_copy_file(const char* dst, const char* src, struct stat* st_src)
 {
-    struct stat* st_dst;
+    struct stat st_dst;
     if (_.do_backup) {
         char buf2[CHUNK_SIZE];
         snprintf(buf2, CHUNK_SIZE, "%s.bkp", dst);
         rename(dst, buf2);
     }
     if (_.no_clobber) {
-        int ret = stat(dst, st_dst);
+        int ret = stat(dst, &st_dst);
         if (ret == 0)
             return 0;
     }
@@ -244,7 +247,7 @@ int do_copy_dir(const char* dst, const char* src, struct stat* st_src)
         char buf[CHUNK_SIZE];
         char buf2[CHUNK_SIZE];
         snprintf(buf, CHUNK_SIZE, "%s/%s", src, ent->d_name);
-        sprintf(buf2, CHUNK_SIZE, "%s/%s", dst, ent->d_name);
+        snprintf(buf2, CHUNK_SIZE, "%s/%s", dst, ent->d_name);
         ret |= do_copy(buf2, buf);
     }
 
@@ -269,18 +272,18 @@ int do_copy(const char* dst, const char* src)
     }
 
     if (S_ISLNK(st_src.st_mode))
-        return do_copy_link(dst, src, st_src.st_mode & 07777, st_src.st_uid, st_src.st_gid);
+        return do_copy_link(dst, src, &st_src);
 
     if (S_ISDIR(st_src.st_mode)) {
         if (!_.is_recursive) {
             fprintf(stderr, "Omitting directory %s\n", src);
             return -1;
         }
-        return do_copy_dir(dst, src, st_src.st_mode & 07777, st_src.st_uid, st_src.st_gid);
+        return do_copy_dir(dst, src, &st_src);
     }
 
-    if (S_IS_REG(st_src.st_mode))
-        return do_copy_file(dst, src, st_src.st_mode & 07777, st_src.st_uid, st_src.st_gid);
+    if (S_ISREG(st_src.st_mode))
+        return do_copy_file(dst, src, &st_src);
 
     fprintf(stderr, "Unable to copy devices %s\n", src);
     return -1;

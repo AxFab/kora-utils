@@ -23,6 +23,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include "utils.h"
 
 int do_copy(const char* dst, const char* src);
@@ -89,6 +90,12 @@ int do_remove(const char* path)
 {
     struct stat st;
     int ret = stat(path, &st);
+    if (ret != 0) {
+        if (_.do_force)
+            return 0;
+        fprintf(stderr, "Unable to find files %s\n", path);
+        return -1;
+    }
     if (S_ISLNK(st.st_mode) || S_ISREG(st.st_mode))
         return unlink(path);
     if (S_ISDIR(st.st_mode)) {
@@ -97,7 +104,7 @@ int do_remove(const char* path)
         return rmdir(path);
     }
 
-    fprintf(stderr, "Cannot remove special files\n");
+    fprintf(stderr, "Cannot remove special files %s\n", path);
     return -1;
 }
 

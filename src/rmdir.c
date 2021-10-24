@@ -31,8 +31,19 @@ char* usages[] = {
 
 char* __program;
 
-void rmdir_parse_args(void* param, unsigned char arg)
+void rmdir_parse_args(void* param, unsigned char opt)
 {
+    switch(opt) {
+    case OPT_HELP: // --help
+        arg_usage(__program, options, usages);
+        exit(0);
+    case OPT_VERS: // --version
+        arg_version(__program);
+        exit(0);
+    default:
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
+        exit(1);
+    }
 }
 
 int main(int argc, char** argv)
@@ -40,7 +51,7 @@ int main(int argc, char** argv)
     int o;
     __program = argv[0];
 
-    int n = arg_parse(argc, argv, (parsa_t)rmdir_parse_args, &_, options);
+    int n = arg_parse(argc, argv, (parsa_t)rmdir_parse_args, NULL, options);
     if (n == 0) {
         fprintf(stderr, "Missing operand.\n");
         arg_usage(__program, options, usages);

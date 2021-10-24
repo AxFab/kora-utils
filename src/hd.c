@@ -84,7 +84,7 @@ int main(int argc, char **argv)
         if (s_range != 0) {
             lseek(fd, s_range, SEEK_CUR);
         }
-        int addr = s_range;
+        __off_t addr = s_range;
         int i, by = 0;
         bool prev_zeros = false;
         bool skip_zeros = false;
@@ -112,11 +112,11 @@ int main(int argc, char **argv)
                 else {
                     prev_zeros = false;
                     if (skip_zeros) {
-                        printf("%08x    *** ***\n", addr - 16);
+                        printf("%08llux    *** ***\n", addr - 16LLU);
                         skip_zeros = false;
                     }
                 }
-                printf("%08x ", addr);
+                printf("%08llux ", (unsigned long long)addr);
                 for (i = 0; i < 8; ++i)
                     printf(" %02x", ((unsigned char *)buf)[by + i]);
                 printf(" ");
@@ -132,15 +132,19 @@ int main(int argc, char **argv)
                 by += 16;
                 lg -= 16;
                 addr += 16;
+                if (addr > e_range)
+                    break;
             }
 
             if (lg != 0)
                 memmove(buf, &buf[by], lg);
             by = lg;
 
+            if (addr > e_range)
+                break;
         }
-        if (by != 0) {
-            printf("%08x ", addr);
+        if (by != 0 && addr < e_range) {
+            printf("%08llux ", (unsigned long long)addr);
             for (i = 0; i < 8; ++i)
                 printf(i < by ? " %02x" : "   ", ((unsigned char*)buf)[i]);
             printf(" ");

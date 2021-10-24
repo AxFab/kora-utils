@@ -47,12 +47,22 @@ struct dopt {
     int follow_first_symlink;
     int apparent_size;
     int max_depth;
-    int exponent;
+    unsigned exponent;
 } _;
 
-void du_parse_args(struct ls_params* params, unsigned char opt)
+void du_parse_args(void* params, unsigned char opt)
 {
-
+    switch(opt) {
+    case OPT_HELP: // --help
+        arg_usage(__program, options, usages);
+        exit(0);
+    case OPT_VERS: // --version
+        arg_version(__program);
+        exit(0);
+    default:
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
+        exit(1);
+    }
 }
 
 void do_print_size(const char* path, size_t size)
@@ -62,7 +72,7 @@ void do_print_size(const char* path, size_t size)
         snprintf(szbuf, 32, "%-7llu", size / 1024LLU);
     else {
 
-        int prec = 0, exp = 0;
+        unsigned prec = 0, exp = 0;
         while (size > _.exponent) {
             prec = (size % _.exponent) * 10 / _.exponent;
             size = size / _.exponent;
@@ -70,9 +80,9 @@ void do_print_size(const char* path, size_t size)
         }
 
         if (exp == 0)
-            snprintf(szbuf, 32, "%4d by", size);
+            snprintf(szbuf, 32, "%4u by", size);
         else
-            snprintf(szbuf, 32, "%4d.%01d%c", (int)size, prec, " KMGTPEYZ"[exp]);
+            snprintf(szbuf, 32, "%4u.%01u%c", (int)size, prec, " KMGTPEYZ"[exp]);
     }
 
     fprintf(stdout, "%7s %s\n", szbuf, path);
@@ -80,7 +90,7 @@ void do_print_size(const char* path, size_t size)
 
 size_t do_count_dir(const char* path, int depth)
 {
-
+    return 0;
 }
 
 
@@ -98,7 +108,7 @@ size_t do_count(const char *path, int depth)
 #ifdef _WIN32
     size_t len = st.st_size;
 #else
-    size_t len = _.apparent_size ? st.st_size : st.blocks * st.blocksize;
+    size_t len = _.apparent_size ? st.st_size : st.st_blocks * st.st_blksize;
 #endif
     if (depth <= _.max_depth)
         do_print_size(path, len);
@@ -110,8 +120,7 @@ int main(int argc, char** argv)
 {
     int o;
     __program = argv[0];
-
-	int dirs = arg_parse(argc, argv, (parsa_t)du_parse_args, NULL, options);
+    arg_parse(argc, argv, (parsa_t)du_parse_args, NULL, options);
 
     for (o = 1; o < argc; ++o) {
         if (argv[o][0] == '-')

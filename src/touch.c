@@ -34,46 +34,49 @@ char *usages[] = {
     NULL,
 };
 
+char *__program;
+
+struct params {
+    int mode;
+    int create;
+} _;
+
+void touch_parse_arg(void *p, unsigned char opt)
+{
+    switch(opt) {
+    case 'a':
+        _.mode = 1;
+        break;
+    case 'm':
+        _.mode = 2;
+        break;
+    case 'c':
+        _.create = 0;
+        break;
+    case OPT_HELP: // --help
+        arg_usage(__program, options, usages);
+        exit(0);
+    case OPT_VERS: // --version
+        arg_version(__program);
+        exit(0);
+    default:
+        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
+        exit(1);
+    }
+}
+
 int main(int argc, char **argv)
 {
+    __program = argv[0];
     time_t now = time(NULL);
     struct timeval clock;
     clock.tv_sec = now;
     // clock.tv_nsec = 0;
-    int mode = 3;
-    int create = 1;
+    _.mode = 3;
+    _.create = 1;
 
-    int o, n = argc;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n = o;
-            break;
-        }
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case 'a':
-                mode = 1;
-                break;
-            case 'm':
-                mode = 2;
-                break;
-            case 'c':
-                create = 0;
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
-
+    int o, n;
+    n = arg_parse(argc, argv, (parsa_t)touch_parse_arg, NULL, options);
     if (n == 0) {
         fprintf(stderr, "Missing file operand\n");
         return 1;
@@ -89,7 +92,7 @@ int main(int argc, char **argv)
 
         int ret = stat(filename, &fstat);
         if (ret) {
-            if (create == 0) {
+            if (_.create == 0) {
                 fprintf(stderr, "No such file %s\n", filename);
                 return 1;
             }
@@ -103,7 +106,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        if (mode & 1) {
+        if (_.mode & 1) {
             times[0].tv_sec = clock.tv_sec;
             // times[0].tv_nsec = clock.tv_nsec;
         } else {
@@ -111,7 +114,7 @@ int main(int argc, char **argv)
             // times[0].tv_nsec = fstat.st_atime.tv_nsec;
         }
 
-        if (mode & 2) {
+        if (_.mode & 2) {
             times[1].tv_sec = clock.tv_sec;
             // times[1].tv_nsec = clock.tv_nsec;
         } else {

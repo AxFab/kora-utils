@@ -173,6 +173,9 @@ int main(int argc, char **argv)
             case OPT_VERS: // --version
                 arg_version(argv[0]);
                 return 0;
+            default:
+                fprintf(stderr, "Option -%c non recognized.\n" HELP, *opt, argv[0]);
+                exit(1);
             }
         }
     }
