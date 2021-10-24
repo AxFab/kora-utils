@@ -40,17 +40,78 @@ struct board {
     bool lock, dirty;
     cell_t *board;
     gfx_t *win;
-    gfx_font_t *font;
+    gfx_font_t* font;
+    gfx_font_t* fontHead;
+    gfx_font_t* fontSign;
+    gfx_font_t* fontSignTop;
+    int time;
+    int score;
+    int marked;
+    time_t start;
 };
 
 struct board _;
 
+#define FA_FLAG "\xef\x80\xa4"
+#define FA_SMILE_BEAM "\xef\x96\xb8"
+#define FA_GRIN_STARS "\xef\x96\x87"
+#define FA_SAD_TEAR "\xef\x96\xb4"
+#define FA_BOMB "\xef\x87\xa2"
+
+
 void paint()
 {
+    gfx_clip_t rc;
+    gfx_text_metrics_t m;
     if (!_.dirty)
         return;
     gfx_map(_.win);
     gfx_fill(_.win, 0x343434, GFX_NOBLEND, NULL);
+
+    char buf[12];
+    if (_.showns != 0) {
+        if (_.score == 0)
+            _.time = time(NULL) - _.start;
+        snprintf(buf, 12, "%d:%02d", _.time / 60, _.time % 60);
+    }
+    else
+        snprintf(buf, 12, "0:00");
+    gfx_mesure_text(_.fontHead, buf, &m);
+    gfx_write(_.win, _.fontHead, buf, 0xffffff, 10, (50 - m.height) / 2 + m.baseline, NULL);
+
+    snprintf(buf, 12, "%d / %d", _.marked, _.bombs);
+    gfx_mesure_text(_.fontHead, buf, &m);
+    gfx_write(_.win, _.fontHead, buf, 0xffffff, _.win->width - 10 - m.width, (50 - m.height) / 2 + m.baseline, NULL);
+
+
+    rc.left = _.win->width / 2 - 20;
+    rc.right = _.win->width / 2 + 20;
+    rc.top = 50 / 2 - 20;
+    rc.bottom = 50 / 2 + 20;
+    gfx_fill(_.win, 0x966010, GFX_NOBLEND, &rc);
+
+    rc.left += 2;
+    rc.right -= 2;
+    rc.top += 2;
+    rc.bottom -= 2;
+    gfx_fill(_.win, 0xa69610, GFX_NOBLEND, &rc);
+
+    // smile-beam: "\xef\x96\xb8"
+    // sad-tear: "\xef\x96\xb4"
+    // grin-stars: \xef\x96\x87
+    // flag: \xef\x80\xa4
+    const char* head = FA_SMILE_BEAM;
+    if (_.score == 0)
+        head = FA_SMILE_BEAM;
+    else if (_.score == 1)
+        head = FA_GRIN_STARS;
+    else if (_.score == -1)
+        head = FA_SAD_TEAR;
+
+    strcpy(buf, head);
+    gfx_mesure_text(_.fontSignTop, buf, &m);
+    gfx_write(_.win, _.fontSignTop, buf, 0xffffff, (_.win->width - m.width) / 2, (50 - m.height) / 2 + m.baseline, NULL);
+
 
     int ds = 10;
     int dy = 50;
@@ -58,7 +119,6 @@ void paint()
     int ch = (_.win->height - dy - ds * 2) / _.rows;
     int sz = cw < ch ? cw : ch;
     char tmp[2];
-    gfx_text_metrics_t m;
     for (int i = 0, n = _.rows * _.cols; i < n; ++i) {
         int x = i / _.rows;
         int y = i % _.rows;
@@ -86,6 +146,19 @@ void paint()
                       rc.left + (sz - 2 - m.width) / 2,
                       rc.top + (sz - 2 + m.baseline) / 2, &rc);
         }
+        else if (_.board[k].mark & MS_MARK) {
+            gfx_mesure_text(_.fontSign, FA_FLAG, &m);
+            gfx_write(_.win, _.fontSign, FA_FLAG, 0xf0f0f0,
+                rc.left + (sz - 2 - m.width) / 2,
+                rc.top + (sz - 2 + m.baseline) / 2, &rc);
+        }
+        else if ((_.board[k].mark & MS_SHOW || _.score != 0) && _.board[k].mark & MS_BOMB) {
+            uint32_t color = _.board[k].mark & MS_SHOW ? 0xf0f0f0 : 0x101010;
+            gfx_mesure_text(_.fontSign, FA_BOMB, &m);
+            gfx_write(_.win, _.fontSign, FA_BOMB, color,
+                rc.left + (sz - 2 - m.width) / 2,
+                rc.top + (sz - 2 + m.baseline) / 2, &rc);
+        }
     }
 
     gfx_flip(_.win, NULL);
@@ -98,6 +171,8 @@ void init()
     _.cols = 10;
     _.bombs = 15;
     _.showns = 0;
+    _.score = 0;
+    _.marked = 0;
     _.dirty = true;
     if (_.board != NULL)
         free(_.board);
@@ -193,7 +268,7 @@ void click()
         return;
     }
 
-    if (_.bombs == 0)
+    if (_.score != 0)
         return;
 
     int ds = 10;
@@ -211,9 +286,11 @@ void click()
 
     _.dirty = true;
     _.board[k].mark |= MS_SHOW;
+    if (_.showns == 0)
+        _.start = time(NULL);
     _.showns++;
     if (_.board[k].mark & MS_BOMB) {
-        _.bombs = 0;
+        _.score = -1;
         if (_.showns <= 1) {
             init();
             click();
@@ -222,8 +299,10 @@ void click()
         _.board[k].mark &= ~MS_SHOW;
         _.showns--;
         reveals(x, y);
-    } else if (_.showns + _.bombs >= _.rows * _.cols) {
-        _.bombs = 0;
+    } 
+    
+    if (_.score == 0 && _.showns + _.bombs >= _.rows * _.cols) {
+        _.score = 1;
         printf("Victory\n");
     }
 }
@@ -233,7 +312,7 @@ void mark()
     if (_.win->seat->mouse_y < 50)
         return;
 
-    if (_.bombs == 0)
+    if (_.score != 0)
         return;
     int ds = 10;
     int dy = 50;
@@ -249,37 +328,46 @@ void mark()
         return;
 
     _.board[k].mark ^= MS_MARK;
+    if (_.board[k].mark & MS_MARK)
+        _.marked++;
+    else
+        _.marked--;
     _.dirty = true;
 }
 
 int main()
 {
-#ifdef _WIN32
-    // Sleep(5 * 1000);
-    gfx_context("win32");
-#endif
-
     srand((unsigned)time(NULL));
     _.win = gfx_create_window(320, 370);
     _.font = gfx_font("Arial", 10, GFXFT_BOLD);
+    _.fontHead = gfx_font("Arial", 20, GFXFT_REGULAR);
+    _.fontSign = gfx_font("Font Awesome 5 Free", 10, GFXFT_SOLID);
+    _.fontSignTop = gfx_font("Font Awesome 5 Free", 20, GFXFT_SOLID);
     _.board = NULL;
 
     gfx_msg_t msg;
     init();
     gfx_timer(0, 50);
-    while (gfx_poll(&msg) == 0) {
+    int dl = 500 / 50;
+    while (gfx_poll(&msg) == 0 && msg.message != GFX_EV_QUIT) {
         gfx_handle(&msg);
-        if (msg.message == GFX_EV_TIMER)
+        switch (msg.message) {
+        case GFX_EV_TIMER:
+            if (--dl == 0) {
+                _.dirty = true;
+                dl = 500 / 50;
+            }
             paint();
-        else if (msg.message == GFX_EV_QUIT)
             break;
-        else if (msg.message == GFX_EV_RESIZE)
+        case GFX_EV_RESIZE:
             _.dirty = true;
-        else if (msg.message == GFX_EV_BTNUP) {
+            break;
+        case GFX_EV_BTNUP:
             if (msg.param1 == 1)
                 click();
             else if (msg.param1 == 2)
                 mark();
+            break;
         }
     }
 
