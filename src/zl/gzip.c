@@ -92,7 +92,7 @@ int main(int argc, char **argv)
             case 'o':
                 if (fout != 1)
                     close(fout);
-                fout = open(argv[++i], O_WRONLY | O_CREAT);
+                fout = open(argv[++i], O_WRONLY | O_CREAT | O_BINARY);
                 break;
             case 'r' :
                 break ;
@@ -131,11 +131,15 @@ int main(int argc, char **argv)
 
 
     for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
+        if (argv[i][0] == '-' && argv[i][1] != '\0') {
+            if (argv[i][1] == 'o')
+                ++i;
             continue;
+        }
+        int wr;
         char *path = argv[i];
         // char *path_out = argv[i];
-        int fin = strcmp(path, "-") ? open(path, O_RDONLY) : 0;
+        int fin = strcmp(path, "-") ? open(path, O_RDONLY | O_BINARY) : 0;
         if (fin == -1) {
             fprintf(stderr, "Unable to open file %s\n", path);
             return 1;
@@ -146,22 +150,27 @@ int main(int argc, char **argv)
             gzfd = gzdopen(fout, "w");
             do {
                 lg = read(fin, buf, BUF_SZ);
-                gzwrite(gzfd, buf, lg);
+                if (lg != 0)
+                    wr = gzwrite(gzfd, buf, lg);
             } while (lg != 0);
+            gzflush(gzfd, Z_FINISH);
+            // fflush(fout);
+            gzclose(gzfd);
+            if (fin != 0)
+                close(fin);
         } else {
             // Decompress
             gzfd = gzdopen(fin, "r");
             do {
                 lg = gzread(gzfd, buf, BUF_SZ);
-                write(fout, buf, lg);
+                if (lg != 0)
+                    wr = write(fout, buf, lg);
             } while (lg != 0);
+            // flush(fout);
+            gzclose(gzfd);
+            if (fout != 1)
+                close(fout);
         }
-        gzclose(gzfd);
-
-        if (fout != 1)
-            close(fout);
-        if (fin != 0)
-            close(fin);
     }
     return 0;
 }
