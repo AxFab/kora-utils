@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <font-awesome-5.h>
 
 #define MS_BOMB 1
 #define MS_SHOW 2
@@ -51,12 +52,6 @@ struct board {
 };
 
 struct board _;
-
-#define FA_FLAG "\xef\x80\xa4"
-#define FA_SMILE_BEAM "\xef\x96\xb8"
-#define FA_GRIN_STARS "\xef\x96\x87"
-#define FA_SAD_TEAR "\xef\x96\xb4"
-#define FA_BOMB "\xef\x87\xa2"
 
 
 void paint()
@@ -303,7 +298,6 @@ void click()
     
     if (_.score == 0 && _.showns + _.bombs >= _.rows * _.cols) {
         _.score = 1;
-        printf("Victory\n");
     }
 }
 

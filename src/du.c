@@ -19,6 +19,7 @@
  */
 #include "utils.h"
 #include <sys/stat.h>
+#include <unistd.h>
 
 opt_t options[] = {
     OPTION('a', "all", "write count for all file, not just directory."),
