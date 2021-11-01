@@ -22,6 +22,10 @@
 #include <fcntl.h>
 #include <stdbool.h>
 
+#ifndef O_BINARY
+# define O_BINARY 0
+#endif
+
 #define BUF_SZ 512
 
 opt_t options[] = {
