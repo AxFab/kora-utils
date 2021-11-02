@@ -55,8 +55,6 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
 #define CHUNK_SIZE 4096
 
 struct copy_info {
@@ -79,7 +77,7 @@ struct copy_info {
 #define CP_PR_ALL 7
 
 
-void cp_parse_args(void* params, unsigned char opt)
+void cp_parse_args(void* params, int opt, char *arg)
 {
     switch (opt) {
     case 'a':
@@ -121,15 +119,6 @@ void cp_parse_args(void* params, unsigned char opt)
     case 'v':
         _.verbose = 1;
         break;
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
-        exit(1);
     }
 }
 
@@ -291,14 +280,12 @@ int do_copy(const char* dst, const char* src)
 
 int main(int argc, char **argv) 
 {
-    int o;
-    __program = argv[0];
     memset(&_, 0, sizeof(_));
 
-    int n = arg_parse(argc, argv, (parsa_t)cp_parse_args, &_, options);
+    int o, n = arg_parse(argc, argv, cp_parse_args, &_, options, usages);
     if (n < 2) {
         fprintf(stderr, "Missing operand.\n");
-        arg_usage(__program, options, usages);
+        arg_usage(argv[0], options, usages);
         return -1;
     } else if (n > 2) {
         _.dst_is_directory = 1;

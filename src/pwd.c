@@ -34,34 +34,23 @@ char *usages[] = {
     NULL,
 };
 
+int physical = 0;
+
+void pwd_parse(void *cfg, int opt, char *arg)
+{
+    switch (*arg) {
+    case 'L' :
+        physical = 0;
+        break;
+    case 'P' :
+        physical = 1;
+        break;
+    }
+}
+
 int main(int argc, char **argv)
 {
-    int i;
-    int physical = 0;
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][0] == '\0')
-            continue;
-        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
-        for (; *arg; ++arg) {
-            switch (*arg) {
-            case 'L' :
-                physical = 0;
-                break;
-            case 'P' :
-                physical = 1;
-                break;
-            case OPT_HELP :
-                arg_usage(argv[0], options, usages) ;
-                return 0;
-            case OPT_VERS :
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, argv[0]);
-                return 1;
-            }
-        }
-    }
+    arg_parse(argc, argv, pwd_parse, NULL, options, usages);
 
     char buffer[4096] = {0};
     if (physical == 0) {

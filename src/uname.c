@@ -39,17 +39,6 @@ char *usages[] = {
     NULL,
 };
 
-void readfile(const char *path, char *buf, size_t len)
-{
-    int fd = open(path, O_RDONLY);
-    read(fd, buf, len);
-    close(fd);
-
-    char *p = strchr(buf, '\n');
-    if (p)
-        *p = '\0';
-}
-
 #define SHOW_NAME 1
 #define SHOW_HOST 2
 #define SHOW_RELEASE 4
@@ -59,81 +48,106 @@ void readfile(const char *path, char *buf, size_t len)
 #define SHOW_VENDOR 64
 #define SHOW_OS 128
 
+
+#if defined __kora__
+#  define UNAME_PATH_NAME  "/proc/sys/kernel/ostype"
+#  define UNAME_PATH_RELEASE  "/proc/sys/kernel/osrelease"
+#  define UNAME_PATH_VERSION  "/proc/sys/kernel/version"
+#  define UNAME_OS  "KoraOS"
+#elif defined __linux__
+#  define UNAME_PATH_NAME  "/proc/sys/kernel/ostype"
+#  define UNAME_PATH_RELEASE  "/proc/sys/kernel/osrelease"
+#  define UNAME_PATH_VERSION  "/proc/sys/kernel/version"
+#  define UNAME_OS  "GNU/Linux"
+#else
+#  define UNAME_PATH_NAME  NULL
+#  define UNAME_PATH_RELEASE  NULL
+#  define UNAME_PATH_VERSION  NULL
+#  define UNAME_OS  "-"
+#endif
+
+void readfile(const char *path, char *buf, size_t len)
+{
+    if (path == NULL) {
+        buf[0] = '\0';
+        return;
+    }
+
+    int fd = open(path, O_RDONLY);
+    read(fd, buf, len);
+    close(fd);
+
+    char *p = strchr(buf, '\n');
+    if (p)
+        *p = '\0';
+}
+
+
+struct {
+    int show;
+} _;
+
+void uname_parse(void *cfg, int opt, char *arg)
+{
+    switch (opt) {
+    case 'a':
+        _.show = 0xff;
+        break;
+    case 's':
+        _.show |= SHOW_NAME;
+        break;
+    case 'n':
+        _.show |= SHOW_HOST;
+        break;
+    case 'r':
+        _.show |= SHOW_RELEASE;
+        break;
+    case 'v':
+        _.show |= SHOW_VERSION;
+        break;
+    case 'm':
+        _.show |= SHOW_ARCH;
+        break;
+    case 'p':
+        _.show |= SHOW_PROC;
+        break;
+    case 'i':
+        _.show |= SHOW_VENDOR;
+        break;
+    case 'o':
+        _.show |= SHOW_OS;
+        break;
+    }
+}
+
 int main(int argc, char **argv)
 {
-    int show = 0;
-    int o, n = 0;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case 'a':
-                show = 0xff;
-                break;
-            case 's':
-                show |= SHOW_NAME;
-                break;
-            case 'n':
-                show |= SHOW_HOST;
-                break;
-            case 'r':
-                show |= SHOW_RELEASE;
-                break;
-            case 'v':
-                show |= SHOW_VERSION;
-                break;
-            case 'm':
-                show |= SHOW_ARCH;
-                break;
-            case 'p':
-                show |= SHOW_PROC;
-                break;
-            case 'i':
-                show |= SHOW_VENDOR;
-                break;
-            case 'o':
-                show |= SHOW_OS;
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
+    _.show = 0;
+    arg_parse(argc, argv, uname_parse, NULL, options, usages);
 
     char buf[64];
 
-    if (show & SHOW_NAME || show == 0) {
-        readfile("/proc/sys/kernel/ostype", buf, 64);
+    if (_.show & SHOW_NAME || _.show == 0) {
+        readfile(UNAME_PATH_NAME, buf, 64);
         printf("%s ", buf);
     }
 
-    if (show & SHOW_HOST) {
+    if (_.show & SHOW_HOST) {
         gethostname(buf, 64);
         printf("%s ", buf);
     }
 
-    if (show & SHOW_RELEASE) {
-        readfile("/proc/sys/kernel/osrelease", buf, 64);
+    if (_.show & SHOW_RELEASE) {
+        readfile(UNAME_PATH_RELEASE, buf, 64);
         printf("%s ", buf);
     }
 
-    if (show & SHOW_VERSION) {
-        readfile("/proc/sys/kernel/version", buf, 64);
+    if (_.show & SHOW_VERSION) {
+        readfile(UNAME_PATH_VERSION, buf, 64);
         printf("%s ", buf);
     }
 
-    if (show & SHOW_ARCH) {
+    if (_.show & SHOW_ARCH) {
 #ifdef __ARCH
         printf("%s ", __ARCH);
 #elif defined __amd64 || defined __x86_64 || defined _M_IA64
@@ -147,22 +161,16 @@ int main(int argc, char **argv)
 #endif
     }
 
-    if (show & SHOW_PROC) {
+    if (_.show & SHOW_PROC) {
         // printf("%s ", "i486");
     }
 
-    if (show & SHOW_VENDOR) {
+    if (_.show & SHOW_VENDOR) {
         // printf("%s ", "pc");
     }
 
-    if (show & SHOW_OS) {
-#if defined __kora__
-        printf("%s ", "KoraOS");
-#elif defined __linux__
-        printf("%s ", "GNU/Linux");
-#else
-        printf("%s ", "-");
-#endif
+    if (_.show & SHOW_OS) {
+        printf("%s ", UNAME_OS);
     }
 
     printf("\n");

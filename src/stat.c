@@ -20,6 +20,7 @@
 #include "utils.h"
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/stat.h>
 
 #define BUF_SZ 4096
@@ -37,8 +38,6 @@ char *usages[] = {
     "[OPTION]... FILE...",
     NULL,
 };
-
-char *__program;
 
 const char *_rights[] = {
     "---", "--x", "-w-", "-wx",
@@ -157,13 +156,13 @@ int do_stat(const char *path, char *buf, int len)
             snprintf(tmp, 32, "%ld", st.st_size);
             break;
         case 'u':
-            snprintf(tmp, 32, "%5ld", st.st_uid);
+            snprintf(tmp, 32, "%5d", st.st_uid);
             break;
         case 'U':
             snprintf(tmp, 32, "%8s", st.st_uid == 0 ? "root" : "-");
             break;
         case 'g':
-            snprintf(tmp, 32, "%5ld", st.st_gid);
+            snprintf(tmp, 32, "%5d", st.st_gid);
             break;
         case 'G':
             snprintf(tmp, 32, "%8s", st.st_gid == 0 ? "root" : "-");
@@ -194,11 +193,12 @@ int do_stat(const char *path, char *buf, int len)
     }
 
     printf(buf);
+    return 0;
 }
 
-void stat_parse_args(void *params, unsigned char arg)
+void stat_parse_args(void *params, int opt, char *arg)
 {
-    switch (arg) {
+    switch (opt) {
     case 'L':
         break;
     case 'f' :
@@ -209,37 +209,22 @@ void stat_parse_args(void *params, unsigned char arg)
         break;
     case 't' :
         break;
-    case OPT_HELP :
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS :
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, arg, __program);
-        exit(1);
     }
+}
+
+int stat_main(void *params, char *arg)
+{
+    char buf[BUF_SZ];
+    return do_stat(arg, buf, BUF_SZ);
 }
 
 int main(int argc, char **argv)
 {
-    int i, n;
-    __program = argv[0];
-    n = arg_parse(argc, argv, (parsa_t)stat_parse_args, NULL, options);
+    int n = arg_parse(argc, argv, stat_parse_args, NULL, options, usages);
     if (n == 0) {
         fprintf(stderr, "Missing operand\n");
-        return 1;
+        return -1;
     }
 
-    int ret = 0;
-    char *buf = malloc(BUF_SZ);
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
-            continue;
-        if (do_stat(argv[i], buf, BUF_SZ) != 0)
-            ret = -1;
-    }
-
-    free(buf);
-    return ret;
+    return arg_names(argc, argv, stat_main, NULL, options);
 }

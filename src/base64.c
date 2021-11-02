@@ -21,11 +21,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #define BUF_SZ 512
 
 opt_t options[] = {
-    OPTION('w', "wrap", "Wrap encoded lines after COLS character (default 76). Use 0 to disable line wrapping."),
+    OPTION_A('w', "wrap=COLS", "Wrap encoded lines after COLS character (default 76). Use 0 to disable line wrapping."),
     OPTION('d', "decode", "Decode data."),
     OPTION('i', "ignore-garbage", "When decoding, ignore non-alphabet characters."),
     OPTION('u', "url-compatible", "Use URL compatible digits."),
@@ -41,50 +40,59 @@ char *usages[] = {
 const char *digits64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 const char *digits64U = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=";
 
-const char *digits;
-int width = 76;
-int state = 0;
-int value = 0;
-int col = 0;
+struct {
+    int width;
+    int decode;
+    int ignore;
+    const char *digits;
+    int state;
+    int value;
+    int col;
+} _;
 
 static void push_char(int ch)
 {
     fputc(ch, stdout);
-    if (width != 0 && (++col % width) == 0)
+    if (_.width != 0 && (++_.col % _.width) == 0)
         fputc('\n', stdout);
 }
 
 static void transform_char(unsigned char cin)
 {
-    if (state == 0) {
-        push_char(digits[cin >> 2]);
-        value = (cin & 3) << 4;
-        state++;
-    } else if (state == 1) {
-        push_char(digits[value | cin >> 4]);
-        value = (cin & 0xF) << 2;
-        state++;
+    if (_.state == 0) {
+        push_char(_.digits[cin >> 2]);
+        _.value = (cin & 3) << 4;
+        _.state++;
+    } else if (_.state == 1) {
+        push_char(_.digits[_.value | cin >> 4]);
+        _.value = (cin & 0xF) << 2;
+        _.state++;
     } else {
-        push_char(digits[value | cin >> 6]);
-        push_char(digits[cin & 0x3F]);
-        value = 0;
-        state = 0;
+        push_char(_.digits[_.value | cin >> 6]);
+        push_char(_.digits[cin & 0x3F]);
+        _.value = 0;
+        _.state = 0;
     }
 }
 
 static void transform_finish()
 {
-    if (state != 0) {
-        push_char(digits[value]);
+    if (_.state != 0) {
+        push_char(_.digits[_.value]);
         push_char('=');
-        if (state == 1)
+        if (_.state == 1)
             push_char('=');
     }
-    value = 0;
-    state = 0;
+    _.value = 0;
+    _.state = 0;
 }
 
-int convert_file(int fd)
+int decode_file(int fd)
+{
+    return -1;
+}
+
+int encode_file(int fd)
 {
     int i;
     char buf[BUF_SZ];
@@ -102,62 +110,43 @@ int convert_file(int fd)
     return 0;
 }
 
+void base64_parse_args(void *param, int opt, char *arg)
+{
+    switch (opt) {
+    case 'w':
+        _.width = strtol(arg, NULL, 0);
+        break;
+    case 'd':
+        _.decode = 1;
+        break;
+    case 'i':
+        _.ignore = 1;
+        break;
+    case 'u':
+        _.digits = digits64U;
+        break;
+    }
+}
+
+int do_base64(void *param, char *path)
+{
+    int fd = strcmp(path, "-") ? open(path, O_RDONLY) : 0;
+    if (fd == -1) {
+        fprintf(stderr, "Unable to open file %s\n", path);
+        return 1;
+    }
+
+    return _.decode == 0 ? encode_file(fd) : decode_file(fd);
+}
+
 int main(int argc, char **argv)
 {
-    int i;
-    digits = digits64;
-    width = 76;
-    int oflg = O_RDONLY;
-    int n = 0;
+    memset(&_, 0, sizeof(_));
+    _.digits = digits64;
+    _.width = 76;
 
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][1] == '\0') {
-            n++;
-            continue;
-        }
-        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
-        for (; *arg; ++arg) {
-            switch (*arg) {
-            case 'w' :
-                ++i;
-                width = strtol(argv[i], NULL, 0);
-                break;
-            case 'd' :
-                break;
-            case 'i' :
-                break;
-            case 'u' :
-                digits = digits64U;
-                break;
-            case OPT_HELP :
-                arg_usage(argv[0], options, usages) ;
-                return 0;
-            case OPT_VERS :
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, argv[0]);
-                return 1;
-            }
-        }
-    }
-
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
-            continue;
-        char *path = argv[i];
-        int fd = strcmp(path, "-") ? open(path, oflg) : 0;
-        if (fd == -1) {
-            fprintf(stderr, "Unable to open file %s\n", path);
-            return 1;
-        }
-
-        if (convert_file(fd))
-            return 1;
-    }
-
-    if (n == 0)
-        return convert_file(0);
-
-    return 0;
+    int n = arg_parse(argc, argv, base64_parse_args, NULL, options, usages);
+    if (n != 0)
+        return arg_names(argc, argv, do_base64, NULL, options);
+    return _.decode == 0 ? encode_file(0) : decode_file(0);
 }

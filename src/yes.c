@@ -28,32 +28,16 @@ char *usages[] = {
     NULL,
 };
 
-char* __program;
-
-void yes_parse_args(void* cfg, unsigned char arg)
-{
-    switch (arg) {
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    }
-}
-
 int main(int argc, char **argv)
 {
-    int o, n;
-    __program = argv[0];
-    n = arg_parse(argc, argv, yes_parse_args, NULL, options);
+    int n =arg_parse(argc, argv, NULL, NULL, options, usages);
 
     char buf[4096];
     if (n == 0)
         strcpy(buf, "y");
     else {
         int len = snprintf(buf, 4096, "%s", argv[1]);
-        for (o = 2; o < argc; ++o)
+        for (int o = 2; o < argc; ++o)
             len += snprintf(&buf[len], 4096 - len, " %s", argv[o]);
     }
 

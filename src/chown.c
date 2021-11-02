@@ -34,8 +34,6 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
 #define CHOWN_OP_KEEP_UID 1
 #define CHOWN_OP_KEEP_GID 2
 
@@ -44,23 +42,15 @@ struct param {
     int oper;
     uid_t uid;
     gid_t gid;
+    bool param;
 } _;
 
-void chmod_parse_args(void* cfg, unsigned char arg)
+void chown_parse_args(void* cfg, int opt, char *arg)
 {
-    switch (arg) {
+    switch (opt) {
     case 'v':
         _.verbose = true;
         break;
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, arg, __program);
-        exit(1);
     }
 }
 
@@ -69,8 +59,16 @@ int chown_read_param(const char* arg)
     return -1;
 }
 
-int do_chown(const char* file)
+int do_chown(void *cfg, char* file)
 {
+    if (_.param == false) {
+        _.param = true;
+        if (chown_read_param(file) == 0)
+            return 0;
+        fprintf(stderr, "Unable to parse parameter %s\n", file);
+        return -1;
+    }
+
     struct stat st;
     if (_.oper != 0) {
         if (stat(file, &st) != 0) {
@@ -93,31 +91,11 @@ int do_chown(const char* file)
 
 int main(int argc, char** argv)
 {
-    int o, n;
-    __program = argv[0];
     memset(&_, 0, sizeof(_));
-    n = arg_parse(argc, argv, chmod_parse_args, NULL, options);
-
+    int n = arg_parse(argc, argv, chown_parse_args, NULL, options, usages);
     if (n == 0) {
-        arg_usage(__program, options, usages);
+        arg_usage(argv[0], options, usages);
         return -1;
     }
-
-    bool param = false;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-        if (!param) {
-            if (chown_read_param(argv[o]) != 0) {
-                fprintf(stderr, "Unable to parse parameter %s\n", argv[o]);
-                return -1;
-            }
-            param = true;
-            continue;
-        }
-
-        do_chown(argv[o]);
-    }
-
-    return 0;
+    return arg_names(argc, argv, do_chown, NULL, options);
 }

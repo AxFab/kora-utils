@@ -31,26 +31,11 @@ char *usages[] = {
 
 int main(int argc, char **argv)
 {
-    int o, n = 0;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
+     for (int o = 1; o < argc; ++o) {
+        if (strcmp(argv[o], "--help") == 0)
+            arg_usage(argv[0], options, usages);
+        else if (strcmp(argv[o], "--version") == 0)
+            arg_version(argv[0]);
     }
 
     return 0;

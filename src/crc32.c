@@ -124,49 +124,25 @@ int convert_file(int fd, const char *name)
     return 0;
 }
 
+int n;
+
+int do_crc32(void *cfg, char *path)
+{
+    int fd = strcmp(path, "-") ? open(path, O_RDONLY) : 0;
+    if (fd == -1) {
+        fprintf(stderr, "Unable to open file %s\n", path);
+        return 1;
+    }
+
+    if (convert_file(fd, n > 1 ? path : NULL))
+        return 1;
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
-    int i;
-    int oflg = O_RDONLY;
-    int n = 0;
-
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][1] == '\0') {
-            n++;
-            continue;
-        }
-        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
-        for (; *arg; ++arg) {
-            switch (*arg) {
-            case OPT_HELP :
-                arg_usage(argv[0], options, usages) ;
-                return 0;
-            case OPT_VERS :
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, argv[0]);
-                return 1;
-            }
-        }
-    }
-
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
-            continue;
-        char *path = argv[i];
-        int fd = strcmp(path, "-") ? open(path, oflg) : 0;
-        if (fd == -1) {
-            fprintf(stderr, "Unable to open file %s\n", path);
-            return 1;
-        }
-
-        if (convert_file(fd, n > 1 ? path : NULL))
-            return 1;
-    }
-
+    n = arg_parse(argc, argv, NULL, NULL, options, usages);
     if (n == 0)
         return convert_file(0, NULL);
-
-    return 0;
+    return arg_names(argc, argv, do_crc32, NULL, options);
 }

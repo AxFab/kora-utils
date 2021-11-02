@@ -29,55 +29,45 @@ char *usages[] = {
     NULL,
 };
 
+struct {
+    char eol;
+} _;
+
+
+void dirname_parse_arg(void *param, int opt, char *arg)
+{
+    (void)param;
+    switch (opt) {
+    case 'z': // --zero
+        _.eol = '\0';
+        break;
+    }
+}
+
+int do_dirname(void *param, char *path)
+{
+    int lg = strlen(path);
+    if (lg > 0 && path[lg - 1] == '/')
+        path[lg - 1] = '\0';
+
+    char *name = strrchr(path, '/');
+    if (name != NULL)
+        name[0] = '\0';
+
+    printf("%s%c", path, _.eol);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
-    // int multiple = 0;
-    char *name = NULL;
+    // _.multiple = 0;
+    _.eol = '\n';
 
-    int o, n = 0;
-    char eol = '\n';
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case 'z': // --zero
-                eol = '\0';
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
-
+    int n = arg_parse(argc, argv, dirname_parse_arg, NULL, options, usages);
     if (n == 0) {
         fprintf(stderr, "%s: except an operand\n" HELP, argv[0], argv[0]);
         return -1;
     }
 
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-
-        int lg = strlen(argv[o]);
-        if (lg > 0 && argv[o][lg - 1] == '/')
-            argv[o][lg - 1] = '\0';
-
-        name = strrchr(argv[o], '/');
-        if (name != NULL)
-            name[0] = '\0';
-
-        printf("%s%c", argv[o], eol);
-    }
-    return 0;
+    return arg_names(argc, argv, do_dirname, NULL, options);
 }

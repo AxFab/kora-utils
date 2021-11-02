@@ -44,17 +44,16 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
 struct param {
     int readable;
     unsigned exponent;
     int fstype;
     int showall;
 } _;
-void df_parse_args(void* cfg, unsigned char arg)
+
+void df_parse_args(void* cfg, int opt, char *arg)
 {
-    switch (arg) {
+    switch (opt) {
     case 'a':
         _.showall = 1;
         break;
@@ -71,15 +70,6 @@ void df_parse_args(void* cfg, unsigned char arg)
     case 'T':
         _.fstype = 1;
         break;
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, arg, __program);
-        exit(1);
     }
 }
 
@@ -107,7 +97,7 @@ void df_fstype(unsigned short type, char* buf, int len)
     }
 }
 
-int show_mounted_point(const char *path)
+int show_mounted_point(void *cfg, char *path)
 {
     char tmp[1024];
     // Get mounted point of path
@@ -174,14 +164,9 @@ int show_mounted_point(const char *path)
 
 int main(int argc, char** argv)
 {
-    int o, n = 0;
-    __program = argv[0];
-    n = arg_parse(argc, argv, df_parse_args, NULL, options);
-
-    if (n == 0) {
-        // LIST MOUNTED POINT ?
+    int n = arg_parse(argc, argv, df_parse_args, NULL, options, usages);
+    if (n == 0) // LIST MOUNTED POINT ?
         return -1;
-    }
 
     if (_.readable == 0 && _.fstype == 0)
         printf("File system                1K-blocks        Used   Available  Use%%  Mounted on\n");
@@ -192,13 +177,5 @@ int main(int argc, char** argv)
     else
         printf("File system               File system   1K-blocks Used      Avail.   Use%%  Mounted on\n");
 
-    int ret = 0;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-        if (show_mounted_point(argv[o]) != 0)
-            ret = -1;
-    }
-
-    return ret;
+    return arg_names(argc, argv, show_mounted_point, NULL, options);
 }

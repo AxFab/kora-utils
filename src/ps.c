@@ -149,30 +149,15 @@ void ps_write(pstat_t *ps)
     }
 }
 
+void ps_parse(void *cfg, int opt, char *arg)
+{
+    switch (opt) {
+    }
+}
 
 int main(int argc, char **argv)
 {
-    int o, n = 0;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
+    arg_parse(argc, argv, ps_parse, NULL, options, usages);
 
     llist_init(&procs);
     struct dirent *de;

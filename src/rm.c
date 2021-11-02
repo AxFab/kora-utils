@@ -43,8 +43,6 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
 struct remove_info {
     int do_force;
     int update_only;
@@ -52,7 +50,7 @@ struct remove_info {
     int is_recursive;
 } _;
 
-void rm_parse_args(void* params, unsigned char opt)
+void rm_parse_args(void* params, int opt, char *arg)
 {
     switch (opt) {
         break;
@@ -69,15 +67,6 @@ void rm_parse_args(void* params, unsigned char opt)
     case 'v':
         _.verbose = 1;
         break;
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
-        exit(1);
     }
 }
 
@@ -86,7 +75,7 @@ void do_remove_dir_entries(const char* path)
 
 }
 
-int do_remove(const char* path)
+int do_remove(void *cfg, char* path)
 {
     struct stat st;
     int ret = stat(path, &st);
@@ -110,23 +99,12 @@ int do_remove(const char* path)
 
 int main(int argc, char** argv)
 {
-    int o;
-    __program = argv[0];
     memset(&_, 0, sizeof(_));
-
-    int n = arg_parse(argc, argv, (parsa_t)rm_parse_args, &_, options);
-    if (n < 1) {
+    int n = arg_parse(argc, argv, rm_parse_args, &_, options, usages);
+    if (n == 0) {
         fprintf(stderr, "Missing operand.\n");
-        arg_usage(__program, options, usages);
         return -1;
     }
 
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-        if (do_remove(argv[o]) != 0)
-            return -1;
-    }
-
-    return 0;
+    return arg_names(argc, argv, do_remove, &_, options);
 }

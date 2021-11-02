@@ -41,13 +41,15 @@ char *usages[] = {
 #define WC_CHARS  8
 #define WC_MAXLG  16
 
-int show = 0;
-int num_width = 4;
-int word_meth = 0;
+struct {
+    int show;
+    int num_width;
+    int word_meth;
+} _;
 
 int is_word(int c)
 {
-    if (word_meth == 1)
+    if (_.word_meth == 1)
         return isalpha(c) || isdigit(c);
     return !isspace(c);
 }
@@ -77,24 +79,24 @@ void do_wc(FILE *fp, const char *name, int *stats)
 
     const char *fmt_int = " %*d";
     const char *fmt = fmt_int + 1;
-    if (show & WC_LINES) {
-        printf(fmt, num_width, ln);
+    if (_.show & WC_LINES) {
+        printf(fmt, _.num_width, ln);
         fmt = fmt_int;
     }
-    if (show & WC_WORDS) {
-        printf(fmt, num_width, wd);
+    if (_.show & WC_WORDS) {
+        printf(fmt, _.num_width, wd);
         fmt = fmt_int;
     }
-    if (show & WC_BYTES) {
-        printf(fmt, num_width, by);
+    if (_.show & WC_BYTES) {
+        printf(fmt, _.num_width, by);
         fmt = fmt_int;
     }
-    if (show & WC_CHARS) {
-        printf(fmt, num_width, ch);
+    if (_.show & WC_CHARS) {
+        printf(fmt, _.num_width, ch);
         fmt = fmt_int;
     }
-    if (show & WC_MAXLG)
-        printf(fmt, num_width, mx);
+    if (_.show & WC_MAXLG)
+        printf(fmt, _.num_width, mx);
     printf(name == NULL ? "\n" : " %s\n", name);
     if (stats) {
         stats[0] += ln;
@@ -104,64 +106,52 @@ void do_wc(FILE *fp, const char *name, int *stats)
     }
 }
 
+void wc_parse(void *cfg, int opt, char *arg)
+{
+    switch (opt) {
+    case 'l':
+        _.show |= WC_LINES;
+        break;
+    case 'w':
+        _.show |= WC_WORDS;
+        break;
+    case 'c':
+        _.show |= WC_BYTES;
+        break;
+    case 'm':
+        _.show |= WC_CHARS;
+        break;
+    case 'L':
+        _.show |= WC_MAXLG;
+        break;
+    case 'x':
+        _.word_meth = 1;
+        break;
+    }
+}
+
+int wc_main(void *stats, char *arg)
+{
+    FILE *fp = (arg == NULL) ? stdin : fopen(arg, "r");
+    do_wc(fp, arg, (int*)stats);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
-    int o, n = 0;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
+    memset(&_, 0, sizeof(_));
+    _.num_width = 4;
 
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case 'l':
-                show |= WC_LINES;
-                break;
-            case 'w':
-                show |= WC_WORDS;
-                break;
-            case 'c':
-                show |= WC_BYTES;
-                break;
-            case 'm':
-                show |= WC_CHARS;
-                break;
-            case 'L':
-                show |= WC_MAXLG;
-                break;
-            case 'x':
-                word_meth = 1;
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
+    int n = arg_parse(argc, argv, wc_parse, NULL, options, usages);
 
-    if (show == 0)
-        show = WC_LINES | WC_WORDS | WC_BYTES;
-
-    if (n == 0) {
-        num_width = 8;
-        do_wc(stdin, NULL, NULL);
-        return 0;
-    }
+    if (_.show == 0)
+        _.show = WC_LINES | WC_WORDS | WC_BYTES;
 
     int stats[5] = { 0 };
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-        FILE *fp = fopen(argv[o], "r");
-        do_wc(fp, argv[o], stats);
+    if (n == 0) {
+        _.num_width = 8;
+        return wc_main(stats, NULL);
     }
 
-    return 0;
+    return arg_names(argc, argv, wc_main, stats, options);
 }

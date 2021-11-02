@@ -32,34 +32,24 @@ char *usages[] = {
     NULL,
 };
 
+struct {
+    char mode;
+} _;
+
+void uptime_parse(void *cfg, int opt, char *arg)
+{
+    switch (opt) {
+    case 'p':
+    case 's':
+        _.mode = opt;
+        break;
+    }
+}
+
 int main(int argc, char **argv)
 {
-    char mode = 'r';
-
-    int o;
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-')
-            break;
-
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case 'p':
-            case 's':
-                mode = *opt;
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            }
-        }
-    }
-
+    _.mode = 'r';
+    arg_parse(argc, argv, uptime_parse, NULL, options, usages);
 
     time_t nowT = time(NULL);
     time_t upT = time(NULL);
@@ -87,11 +77,11 @@ int main(int argc, char **argv)
     int dMin = (diff / 60) % 60;
     int users = 1; // TODO
 
-    if (mode == 's') {
+    if (_.mode == 's') {
         printf(" %04d-%02d-%02d %02d:%02d:%02d\n",
                up.tm_year, up.tm_mon, up.tm_mday,
                up.tm_hour, up.tm_min, up.tm_sec);
-    } else if (mode == 'p') {
+    } else if (_.mode == 'p') {
         if (dDay > 0)
             printf(" Up %d days, %d hours and %d minutes\n", dDay, dHours, dMin);
         else

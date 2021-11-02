@@ -41,8 +41,6 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
 struct dopt {
     int follow_symlink;
     int follow_first_symlink;
@@ -51,18 +49,9 @@ struct dopt {
     unsigned exponent;
 } _;
 
-void du_parse_args(void* params, unsigned char opt)
+void du_parse_args(void* params, int opt, char *arg)
 {
     switch(opt) {
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
-        exit(1);
     }
 }
 
@@ -81,7 +70,7 @@ void do_print_size(const char* path, size_t size)
         }
 
         if (exp == 0)
-            snprintf(szbuf, 32, "%4u by", size);
+            snprintf(szbuf, 32, "%4u by", (int)size);
         else
             snprintf(szbuf, 32, "%4u.%01u%c", (int)size, prec, " KMGTPEYZ"[exp]);
     }
@@ -117,16 +106,15 @@ size_t do_count(const char *path, int depth)
     return len;
 }
 
-int main(int argc, char** argv) 
+int do_disk_usage(void *cfg, char *path)
 {
-    int o;
-    __program = argv[0];
-    arg_parse(argc, argv, (parsa_t)du_parse_args, NULL, options);
+    do_count(path, 0);
+    return 0;
+}
 
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;
-        do_count(argv[o], 0);
-    }
+int main(int argc, char** argv)
+{
+    arg_parse(argc, argv, du_parse_args, NULL, options, usages);
+    arg_names(argc, argv, do_disk_usage, NULL, options);
 	return 0;
 }

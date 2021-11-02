@@ -29,40 +29,26 @@ char* usages[] = {
     NULL,
 };
 
-char* __program;
-
-void rmdir_parse_args(void* param, unsigned char opt)
+void rmdir_parse_args(void* param, int opt, char *arg)
 {
     switch(opt) {
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
-        exit(1);
     }
+}
+
+int do_rmdir(void* param, char *path)
+{
+    // TODO
+    return -1;
 }
 
 int main(int argc, char** argv)
 {
-    int o;
-    __program = argv[0];
-
-    int n = arg_parse(argc, argv, (parsa_t)rmdir_parse_args, NULL, options);
+    int n = arg_parse(argc, argv, rmdir_parse_args, NULL, options, usages);
     if (n == 0) {
         fprintf(stderr, "Missing operand.\n");
-        arg_usage(__program, options, usages);
+        arg_usage(argv[0], options, usages);
         return -1;
     }
 
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] == '-')
-            continue;        
-        // TODO
-    }
-
-    return -1;
+    return arg_names(argc, argv, do_rmdir, NULL, options);
 }

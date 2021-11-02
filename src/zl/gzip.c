@@ -35,8 +35,8 @@ opt_t options[] = {
     // OPTION('l', "list", "Print info for each compressed file"),
     // OPTION('n', "no-name", "..."),
     // OPTION('N', "name", "..."),
-    OPTION('o', "output", "Write output on a file"),
-    // OPTION('s', "suffix", "..."),
+    OPTION_A('o', "output", "Write output on a file"),
+    OPTION_A('s', "suffix", "..."),
     // OPTION('q', "quiet", "Suppress all warnings"),
     // OPTION('r', "recursive", "..."),
     // OPTION('v', "verbose", "..."),
@@ -50,131 +50,130 @@ char *usages[] = {
     NULL,
 };
 
+struct {
+    int level;
+    int verbose;
+    bool compress;
+    const char *suffix;
+    int fout;
+
+} _;
+
+void gzip_param(void *cfg, int opt, char *arg)
+{
+    switch (opt) {
+    case 'c':
+        if (_.fout != 1)
+            close(_.fout);
+        _.fout = 1;
+        break ;
+    case 'd' :
+        _.compress = false;
+        break;
+    case 'f' :
+        break ;
+    case 'l' :
+        break ;
+    case 'L' :
+        fprintf(stderr, "This utility link to zlib library:\n");
+        fprintf(stderr, "Copyright (C) 2017 Free Software Foundation, Inc.\n");
+        fprintf(stderr, "Copyright (C) 1993 Jean-loup Gailly.\n");
+        fprintf(stderr, "This is free software.  You may redistribute copies of it under the terms of\n");
+        fprintf(stderr, "the GNU General Public License <https://www.gnu.org/licenses/gpl.html>.\n");
+        fprintf(stderr, "There is NO WARRANTY, to the extent permitted by law.\n");
+        exit(0);
+    case 'n' :
+        break ;
+    case 'N' :
+        break ;
+    case 'o':
+        if (_.fout != 1)
+            close(_.fout);
+        _.fout = open(arg, O_WRONLY | O_CREAT | O_BINARY);
+        break;
+    case 'r' :
+        break ;
+    case 's' :
+        _.suffix = arg;
+        break ;
+    case 'q' :
+        _.verbose = 0;
+        break ;
+    case 'v' :
+        _.verbose = 2;
+        break ;
+    case '1' :
+    case '2' :
+    case '3' :
+    case '4' :
+    case '5' :
+    case '6' :
+    case '7' :
+    case '8' :
+    case '9' :
+        _.level = opt - '0';
+        break ;
+    }
+}
+
+int gzip_main(void *cfg, char *path)
+{
+    int lg, wr;
+    gzFile gzfd;
+    char buf[BUF_SZ];
+    int fin = strcmp(path, "-") ? open(path, O_RDONLY | O_BINARY) : 0;
+    if (fin == -1) {
+        fprintf(stderr, "Unable to open file %s\n", path);
+        return -1;
+    }
+
+    if (_.compress) {
+        // Compress
+        gzfd = gzdopen(_.fout, "w");
+        do {
+            lg = read(fin, buf, BUF_SZ);
+            if (lg == 0)
+                return -1;
+            wr = gzwrite(gzfd, buf, lg);
+            if (wr == 0)
+                return -1;
+        } while (lg != 0);
+        gzflush(gzfd, Z_FINISH);
+        gzclose(gzfd);
+        if (fin != 0)
+            close(fin);
+    } else {
+        // Decompress
+        gzfd = gzdopen(fin, "r");
+        do {
+            lg = gzread(gzfd, buf, BUF_SZ);
+            if (lg == 0)
+                return -1;
+            wr = write(_.fout, buf, lg);
+            if (wr == 0)
+                return -1;
+        } while (lg != 0);
+        gzclose(gzfd);
+        if (_.fout != 1)
+            close(_.fout);
+    }
+    return 0;
+}
+
 
 int main(int argc, char **argv)
 {
-    int i;
-    int level;
-    int verbose = 1;
-    char *suffix = "gz";
-    bool compress = true;
-    int fout = 1;
-    int lg;
-    char buf[BUF_SZ];
-    gzFile gzfd;
+    memset(&_, 0, sizeof(_));
+    _.verbose = 1;
+    _.suffix = "gz";
+    _.compress = true;
+    _.fout = 1;
 
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][0] == '\0')
-            continue;
-        char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : &argv[i][1];
-        for (; *arg; ++arg) {
-            switch (*arg) {
-            case 'c':
-                if (fout != 1)
-                    close(fout);
-                fout = 1;
-                break ;
-            case 'd' :
-                compress = false;
-                break;
-            case 'f' :
-                break ;
-            case 'l' :
-                break ;
-            case 'L' :
-                fprintf(stderr, "This utility link to zlib library:\n");
-                fprintf(stderr, "Copyright (C) 2017 Free Software Foundation, Inc.\n");
-                fprintf(stderr, "Copyright (C) 1993 Jean-loup Gailly.\n");
-                fprintf(stderr, "This is free software.  You may redistribute copies of it under the terms of\n");
-                fprintf(stderr, "the GNU General Public License <https://www.gnu.org/licenses/gpl.html>.\n");
-                fprintf(stderr, "There is NO WARRANTY, to the extent permitted by law.\n");
-                return 1;
-            case 'n' :
-                break ;
-            case 'N' :
-                break ;
-            case 'o':
-                if (fout != 1)
-                    close(fout);
-                fout = open(argv[++i], O_WRONLY | O_CREAT | O_BINARY);
-                break;
-            case 'r' :
-                break ;
-            case 's' :
-                suffix = argv[++i];
-                break ;
-            case 'q' :
-                verbose = 0;
-                break ;
-            case 'v' :
-                verbose = 2;
-                break ;
-            case '1' :
-            case '2' :
-            case '3' :
-            case '4' :
-            case '5' :
-            case '6' :
-            case '7' :
-            case '8' :
-            case '9' :
-                level = *arg - '0';
-                break ;
-            case OPT_HELP :
-                arg_usage(argv[0], options, usages) ;
-                return 0;
-            case OPT_VERS :
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, argv[0]);
-                return 1;
-            }
-        }
+    int n = arg_parse(argc, argv, gzip_param, NULL, options, usages);
+    if (n == 0) {
+        fprintf(stderr, "%s: Missing operands\n", argv[0]);
+        return -1;
     }
 
-
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0') {
-            if (argv[i][1] == 'o')
-                ++i;
-            continue;
-        }
-        int wr;
-        char *path = argv[i];
-        // char *path_out = argv[i];
-        int fin = strcmp(path, "-") ? open(path, O_RDONLY | O_BINARY) : 0;
-        if (fin == -1) {
-            fprintf(stderr, "Unable to open file %s\n", path);
-            return 1;
-        }
-
-        if (compress) {
-            // Compress
-            gzfd = gzdopen(fout, "w");
-            do {
-                lg = read(fin, buf, BUF_SZ);
-                if (lg != 0)
-                    wr = gzwrite(gzfd, buf, lg);
-            } while (lg != 0);
-            gzflush(gzfd, Z_FINISH);
-            // fflush(fout);
-            gzclose(gzfd);
-            if (fin != 0)
-                close(fin);
-        } else {
-            // Decompress
-            gzfd = gzdopen(fin, "r");
-            do {
-                lg = gzread(gzfd, buf, BUF_SZ);
-                if (lg != 0)
-                    wr = write(fout, buf, lg);
-            } while (lg != 0);
-            // flush(fout);
-            gzclose(gzfd);
-            if (fout != 1)
-                close(fout);
-        }
-    }
-    return 0;
+    return arg_names(argc, argv, gzip_main, NULL, options);
 }

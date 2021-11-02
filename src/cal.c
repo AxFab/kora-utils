@@ -24,8 +24,8 @@
 opt_t options[] = {
     OPTION('1', NULL, "Display on 1 column, like -C 1"),
     OPTION('3', NULL, "Display on 3 columns, like -C 3"),
-    OPTION('R', "rows", "Display several months, print x row"),
-    OPTION('C', "cols", "Display several months, print x column"),
+    OPTION_A('R', "rows", "Display several months, print x row"),
+    OPTION_A('C', "cols", "Display several months, print x column"),
     // OPTION('j', NULL, "Show day of the year instead of day of month"),
     // OPTION('y', NULL, "Display the all year"),
     END_OPTION("Display monthly calandar.")
@@ -129,67 +129,58 @@ time_t parse_date(const char *str)
     return mktime(&tm);
 }
 
+struct {
+    int col;
+    int row;
+    int nbr;
+    time_t today;
+    time_t showdate;
+} _;
+
+void cal_parse_args(void *param, int opt, char *arg)
+{
+    switch (opt) {
+    case '1':
+        _.col = 1;
+        break;
+    case '3':
+        _.col = 3;
+        break;
+    case 'R': // --rows
+        _.row = strtol(arg, NULL, 10);
+        break;
+    case 'C': // --cols
+        _.col = strtol(arg, NULL, 10);
+        break;
+    case 'd':
+        _.showdate = parse_date(arg);
+        break;
+    }
+}
+
 int main(int argc, char **argv)
 {
-    int c, C = 1;
-    int r, R = 1;
-    int o, n = 0;
+    memset(&_, 0, sizeof(_));
+    _.col = 1;
+    _.row = 1;
+    _.nbr = 0;
+    _.today = time(NULL);
+    _.showdate = _.today;
 
-    time_t today = time(NULL);
-    time_t showdate = time(NULL);
+    int c, r;
 
-    for (o = 1; o < argc; ++o) {
-        if (argv[o][0] != '-') {
-            n++;
-            continue;
-        }
+    arg_parse(argc, argv, cal_parse_args, NULL, options, usages);
 
-        unsigned char *opt = (unsigned char *)&argv[o][1];
-        if (*opt == '-')
-            opt = arg_long(&argv[o][2], options);
-        for (; *opt; ++opt) {
-            switch (*opt) {
-            case '1':
-                C = 1;
-                break;
-            case '3':
-                C = 3;
-                break;
-            case 'R': // --rows
-                R = strtol(argv[o + 1], NULL, 10);
-                argv[o + 1] = "-";
-                break;
-            case 'C': // --cols
-                C = strtol(argv[o + 1], NULL, 10);
-                argv[o + 1] = "-";
-                break;
-            case 'd':
-                showdate = parse_date(argv[o + 1]);
-                argv[o + 1] = "-";
-                break;
-            case OPT_HELP: // --help
-                arg_usage(argv[0], options, usages);
-                return 0;
-            case OPT_VERS: // --version
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *opt, argv[0]);
-                exit(1);
-            }
-        }
-    }
-
-    if (showdate == 0) {
+    if (_.showdate == 0) {
         printf("Invalid date!\n");
         return -1;
     }
 
     struct tm tdd;
-    gmtime_r(&today, &tdd);
+    gmtime_r(&_.today, &tdd);
 
     struct tm tmd;
-    gmtime_r(&showdate, &tmd);
+    gmtime_r(&_.showdate, &tmd);
 
     int i;
 
@@ -199,15 +190,15 @@ int main(int argc, char **argv)
     int m = tmd.tm_mon;
     int y = tmd.tm_year;
 
-    for (r = 0; r < R; ++r) {
-        for (c = 0; c < C; ++c) {
+    for (r = 0; r < _.row; ++r) {
+        for (c = 0; c < _.col; ++c) {
             if (c != 0)
                 printf("  ");
-            display_month(m + c + r * C, y + 1900);
+            display_month(m + c + r * _.col, y + 1900);
         }
         printf("\n");
 
-        for (c = 0; c < C; ++c) {
+        for (c = 0; c < _.col; ++c) {
             if (c != 0)
                 printf("  ");
             display_wdays();
@@ -215,11 +206,11 @@ int main(int argc, char **argv)
         printf("\n");
 
         for (i = 0; i < 6; ++i) {
-            for (c = 0; c < C; ++c) {
-                w = wday_of_first(m + c + r * C, y);
+            for (c = 0; c < _.col; ++c) {
+                w = wday_of_first(m + c + r * _.col, y);
                 if (c != 0)
                     printf("  ");
-                display_week(i, w, days_on_month(m + c + r * C, y), m + c + r * C == tdd.tm_mon ? tdd.tm_mday : -1);
+                display_week(i, w, days_on_month(m + c + r * _.col, y), m + c + r * _.col == tdd.tm_mon ? tdd.tm_mday : -1);
             }
             printf("\n");
         }

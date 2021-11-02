@@ -128,7 +128,7 @@ struct ls_params {
     struct ls_dir **table;
 };
 
-void ls_parse_args(struct ls_params *params, unsigned char opt)
+void ls_parse_args(struct ls_params *params, int opt, char *arg)
 {
     switch (opt) {
     case 'a' :
@@ -153,16 +153,6 @@ void ls_parse_args(struct ls_params *params, unsigned char opt)
         // No owner !
         params->format = 1;
         break;
-
-    case OPT_HELP: // --help
-        arg_usage(__program, options, usages);
-        exit(0);
-    case OPT_VERS: // --version
-        arg_version(__program);
-        exit(0);
-    default:
-        fprintf(stderr, "Option -%c non recognized.\n" HELP, opt, __program);
-        exit(1);
     }
 }
 
@@ -413,7 +403,7 @@ int main(int argc, char **argv)
     params.use_color = true;
     params.width = tty_cols();
 
-    int dirs = arg_parse(argc, argv, (parsa_t)ls_parse_args, &params, options);
+    int dirs = arg_parse(argc, argv, (parsa_t)ls_parse_args, &params, options, usages);
 
     if (dirs == 0)
         do_ls(".", &params);

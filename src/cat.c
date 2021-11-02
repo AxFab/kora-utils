@@ -54,130 +54,122 @@ char notations_lg[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-int main(int argc, char **argv)
-{
-    int i;
-    int oflg = 0 ; // O_RDONLY;
-    int numbers = 0;
-    int blanks = 0;
-    int squeeze = 0;
-    int row = 0;
-    char last = '\n';
+struct {
+    int blanks;
+    int numbers;
+    int squeeze;
+    int row;
+    char last;
+} _;
 
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] != '-' || argv[i][0] == '\0')
-            continue;
-        unsigned char *arg = argv[i][1] == '-' ? arg_long(&argv[i][2], options) : (unsigned char *)&argv[i][1];
-        for (; *arg; ++arg) {
-            switch (*arg) {
-            case 'A' :
-                blanks |= 7;
-                break ;
-            case 'b' :
-                numbers ++;
-                break;
-            case 'e' :
-                blanks |= 5;
-                break ;
-            case 'E' :
-                blanks |= 4;
-                break ;
-            case 'n' :
-                numbers = 2;
-                break;
-            case 's' :
-                squeeze = 1;
-                break ;
-            case 't' :
-                blanks |= 3;
-                break ;
-            case 'T' :
-                blanks |= 2;
-                break ;
-            case 'v' :
-                blanks |= 1;
-                break ;
-            case OPT_HELP :
-                arg_usage(argv[0], options, usages) ;
-                return 0;
-            case OPT_VERS :
-                arg_version(argv[0]);
-                return 0;
-            default:
-                fprintf(stderr, "Option -%c non recognized.\n" HELP, *arg, argv[0]);
-                return 1;
-            }
-        }
+void cat_parse_args(void *param, int opt, char *arg)
+{
+    switch (opt) {
+    case 'A' :
+        _.blanks |= 7;
+        break ;
+    case 'b' :
+        _.numbers ++;
+        break;
+    case 'e' :
+        _.blanks |= 5;
+        break ;
+    case 'E' :
+        _.blanks |= 4;
+        break ;
+    case 'n' :
+        _.numbers = 2;
+        break;
+    case 's' :
+        _.squeeze = 1;
+        break ;
+    case 't' :
+        _.blanks |= 3;
+        break ;
+    case 'T' :
+        _.blanks |= 2;
+        break ;
+    case 'v' :
+        _.blanks |= 1;
+        break ;
+    }
+}
+
+int do_cat(void *param, char *path)
+{
+    char buf[BUF_SZ];
+    int fd = strcmp(path, "-") ? open(path, O_RDONLY) : 0;
+    if (fd == -1) {
+        fprintf(stderr, "Unable to open file %s\n", path);
+        return -1;
     }
 
-    char buf[BUF_SZ] ;
-    for (i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] != '\0')
+    for (;;) {
+        int lg = read(fd, buf, BUF_SZ);
+        if (lg == 0)
+            break ;
+        if (lg < 0)
+            return -1;
+
+        if (_.numbers + _.blanks + _.squeeze == 0) {
+            if (write(1, buf, lg) <= 0)
+                return -1;
             continue;
-        char *path = argv[i];
-        int fd = strcmp(path, "-") ? open(path, oflg) : 0;
-        if (fd == -1) {
-            fprintf(stderr, "Unable to open file %s\n", path);
-            return 1;
         }
 
-        for (;;) {
-            int lg = read(fd, buf, BUF_SZ);
-            if (lg == 0)
-                break ;
-            if (lg < 0)
-                return 1;
-            if (numbers + blanks + squeeze == 0) {
-
-                if (write(1, buf, lg) <= 0)
-                    return 1;
-            } else {
-                int st = 0;
-                while (st < lg) {
-                    if (last == '\n' && (numbers > 2 || (numbers && buf[st] != '\n')))
-                        dprintf(1, "%6d  ", ++row);
-                    if (squeeze && last == '\n') {
-                        // TODO - Erase until only one blank line!
-                    }
-
-                    int wr = st;
-                    while ((buf[wr] < 0 || buf[wr] >= 0x20) && wr < lg)
-                        wr++;
-                    if (st != wr) {
-                        if (write(1, & buf[st], wr - st) <= 0)
-                            return 1;
-                    }
-
-                    if (wr == lg) {
-                        //
-                        break;
-                    }
-
-                    switch (buf[wr]) {
-                    case '\n' :
-                        if (blanks & 4)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    case '\t' :
-                        if (blanks & 2)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    default:
-                        if (blanks & 1)
-                            write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
-                        else
-                            write(1, &buf[wr], 1);
-                        break;
-                    }
-                    last = buf[wr];
-                    st = wr + 1;
-                }
+        int st = 0;
+        while (st < lg) {
+            if (_.last == '\n' && (_.numbers > 2 || (_.numbers && buf[st] != '\n')))
+                dprintf(1, "%6d  ", ++_.row);
+            if (_.squeeze && _.last == '\n') {
+                // TODO - Erase until only one blank line!
             }
+
+            int wr = st;
+            while ((buf[wr] < 0 || buf[wr] >= 0x20) && wr < lg)
+                wr++;
+            if (st != wr) {
+                if (write(1, & buf[st], wr - st) <= 0)
+                    return -1;
+            }
+
+            if (wr == lg) {
+                //
+                break;
+            }
+
+            switch (buf[wr]) {
+            case '\n' :
+                if (_.blanks & 4)
+                    write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
+                else
+                    write(1, &buf[wr], 1);
+                break;
+            case '\t' :
+                if (_.blanks & 2)
+                    write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
+                else
+                    write(1, &buf[wr], 1);
+                break;
+            default:
+                if (_.blanks & 1)
+                    write(1, notations[(int)buf[wr]], notations_lg[(int)buf[wr]]);
+                else
+                    write(1, &buf[wr], 1);
+                break;
+            }
+            _.last = buf[wr];
+            st = wr + 1;
         }
     }
     return 0;
+}
+
+
+int main(int argc, char **argv)
+{
+    memset(&_, 0, sizeof(_));
+    _.last = '\n';
+    arg_parse(argc, argv, cat_parse_args, NULL, options, usages);
+    return arg_names(argc, argv, do_cat, NULL, options);
 }
