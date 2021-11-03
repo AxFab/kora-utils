@@ -28,6 +28,7 @@ CFLAGS ?= -Wall -Wextra -Wno-unused-parameter -ggdb
 ifneq ($(sysdir),)
 CFLAGS_l += -I$(sysdir)/include
 LFLAGS_l += -L$(sysdir)/lib
+LFLAGS_l += -Wl,-rpath-link,$(sysdir)/lib
 endif
 
 include $(topdir)/make/build.mk
@@ -57,7 +58,7 @@ OTHS := $(shell basename -s .c -a $(wildcard $(srcdir)/zl/*.c))
 $(foreach cmd,$(OTHS),$(eval $(call util,$(cmd),zl,z)))
 
 CFLAGS_g += $(CFLAGS_u)
-LFLAGS_g += $(LFLAGS_l) -lgfx -lpng -lm -lz
+LFLAGS_g += $(LFLAGS_l) -lgfx
 APPS := $(shell basename -s .c -a $(wildcard $(srcdir)/ui/*.c))
 $(foreach cmd,$(APPS),$(eval $(call util,$(cmd),ui,g)))
 
