@@ -38,6 +38,7 @@ struct cell {
 struct board {
     int rows, cols;
     int bombs, showns;
+    int init_bomb;
     bool lock, dirty;
     cell_t *board;
     gfx_t *win;
@@ -53,6 +54,23 @@ struct board {
 
 struct board _;
 
+
+uint32_t num_colors[] = {
+    0xf0f0f0, 
+#if 0
+    GFX_RGB(0, 181, 230, 29),
+    GFX_RGB(0, 153, 217, 234),
+    GFX_RGB(0, 112, 146, 190),
+    GFX_RGB(0, 200, 191, 231),
+    GFX_RGB(0, 239, 228, 176),
+    GFX_RGB(0, 255, 201, 14),
+    GFX_RGB(0, 255, 127, 39),
+    GFX_RGB(0, 237, 28, 36),
+#else
+    0xf0f0f0, 0xf0f0f0, 0xf0f0f0, 0xf0f0f0,
+    0xf0f0f0, 0xf0f0f0, 0xf0f0f0, 0xf0f0f0,
+#endif
+};
 
 void paint()
 {
@@ -137,7 +155,7 @@ void paint()
         if (_.board[k].bombs != 0 && _.board[k].mark & MS_SHOW) {
             snprintf(tmp, 2, "%d", _.board[k].bombs);
             gfx_mesure_text(_.font, tmp, &m);
-            gfx_write(_.win, _.font, tmp, 0xf0f0f0,
+            gfx_write(_.win, _.font, tmp, num_colors[_.board[k].bombs],
                       rc.left + (sz - 2 - m.width) / 2,
                       rc.top + (sz - 2 + m.baseline) / 2, &rc);
         }
@@ -162,9 +180,7 @@ void paint()
 
 void init()
 {
-    _.rows = 10;
-    _.cols = 10;
-    _.bombs = 15;
+    _.bombs = _.init_bomb;
     _.showns = 0;
     _.score = 0;
     _.marked = 0;
@@ -329,6 +345,8 @@ void mark()
     _.dirty = true;
 }
 
+#define MINE_LEVEL 2
+
 int main()
 {
     srand((unsigned)time(NULL));
@@ -338,6 +356,25 @@ int main()
     _.fontSign = gfx_font("Font Awesome 5 Free", 10, GFXFT_SOLID);
     _.fontSignTop = gfx_font("Font Awesome 5 Free", 20, GFXFT_SOLID);
     _.board = NULL;
+
+#if MINE_LEVEL == 1
+    _.rows = 10;
+    _.cols = 10;
+    _.init_bomb = 15;
+#elif MINE_LEVEL == 2
+    _.rows = 15;
+    _.cols = 20;
+    _.init_bomb = 50;
+#elif MINE_LEVEL == 3
+    _.rows = 25;
+    _.cols = 35;
+    _.init_bomb = 150;
+#else
+    _.rows = 25;
+    _.cols = 25;
+    _.init_bomb = 150;
+#endif
+    printf("Board %dx%d (%d bombs - %.1f%%)\n", _.rows, _.cols, _.init_bomb, (float)_.init_bomb * 100 / (_.rows * _.cols));
 
     gfx_msg_t msg;
     init();

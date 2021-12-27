@@ -62,6 +62,10 @@ LFLAGS_g += $(LFLAGS_l) -lgfx
 APPS := $(shell basename -s .c -a $(wildcard $(srcdir)/ui/*.c))
 $(foreach cmd,$(APPS),$(eval $(call util,$(cmd),ui,g)))
 
+CFLAGS_s += $(CFLAGS_u)
+APPS := $(shell basename -s .c -a $(wildcard $(srcdir)/sp/*.c))
+$(foreach cmd,$(APPS),$(eval $(call util,$(cmd),sp,s)))
+
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 bins: $(UTILS)
