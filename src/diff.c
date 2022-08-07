@@ -111,7 +111,10 @@ void do_diff(FILE *fp1, FILE *fp2)
         tail = 0;
         // Search the line on target
         int nx = ftxt_shr(f2, l1, r2);
-        if (nx >= 0) {
+        // Search the line on origin
+        int ny = ftxt_shr(f1, l2, r1);
+        
+        if (nx >= 0 && (ny < 0 || nx < ny)) {
             while (r2 < nx) {
                 printf("\033[32m%c %s\033[0m", cP, l2);
                 l2 = f2->row_cache[++r2];
@@ -120,20 +123,21 @@ void do_diff(FILE *fp1, FILE *fp2)
             continue;
         }
 
-        // Search the line on origin
-        nx = ftxt_shr(f1, l2, r1);
-        if (nx >= 0) {
-            while (r1 < nx) {
+        if (ny >= 0 && (nx < 0 || ny < nx)) {
+            while (r1 < ny) {
                 printf("\033[31m%c %s\033[0m", cM, l1);
                 l1 = f1->row_cache[++r1];
                 df1++;
             }
             continue;
         }
+
         printf("\033[31m%c %s\033[0m", cM, l1);
         ++r1;
         df1++;
     }
+
+    // if not at the end of either file !?
 }
 
 
